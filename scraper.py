@@ -43,78 +43,33 @@ def fetch_tournaments() -> list[dict]:
 
 
 def _parse_tournaments(soup) -> list[dict]:
-    from bs4 import BeautifulSoup
     import re
 
+    # WebDev (PCSOFT) pattern: données dans des divs id="A7_{row}_{col}"
+    # col 3=TOURNOI, 4=CLUB, 7=DÉBUT, 8=FIN, 9=VILLE, 10=INSCR.avant
+    COL = {"nom": 3, "club": 4, "debut": 7, "fin": 8, "ville": 9, "inscription_avant": 10}
+
+    def get_cell(row_num, col_num):
+        el = soup.find("div", id=f"A7_{row_num}_{col_num}")
+        return el.get_text(strip=True) if el else ""
+
+    # Compter les lignes disponibles via la colonne TOURNOI
+    name_cells = soup.find_all("div", id=re.compile(r"^A7_\d+_3$"))
     tournaments = []
 
-    # Dans WebDev (PCSOFT), le tableau principal a un id commençant par 'ctz'
-    # Les lignes de données ont des ids comme 'A7_ligne_0', 'WD_ligne_A7_0', ou des classes spécifiques
-    # Stratégie: chercher la table dont les headers contiennent TOURNOI + DÉBUT + VILLE
-
-    all_tables = soup.find_all("table")
-    header_table = None
-    col_indices = {}
-
-    for table in all_tables:
-        # Chercher une ligne qui contient les colonnes TOURNOI, DÉBUT, VILLE
-        header_row = table.find("tr", id=lambda x: x and "TITRES" in x)
-        if not header_row:
-            # Chercher dans les premières lignes
-            rows = table.find_all("tr", limit=3)
-            for row in rows:
-                texts = [td.get_text(strip=True) for td in row.find_all("td")]
-                if "TOURNOI" in texts and "VILLE" in texts:
-                    header_row = row
-                    break
-
-        if header_row:
-            headers = [td.get_text(strip=True) for td in header_row.find_all("td")]
-            if "TOURNOI" in headers:
-                header_table = table
-                col_indices = {h: i for i, h in enumerate(headers) if h}
-                break
-
-    if not header_table:
-        print("Table de tournois non trouvée dans le HTML rendu.")
-        return []
-
-    # Les lignes de données: dans WebDev, elles ont souvent un id avec un numéro
-    data_rows = header_table.find_all("tr", id=re.compile(r"A\d+_\d+|ligne"))
-    if not data_rows:
-        # Fallback: toutes les lignes après l'en-tête
-        all_rows = header_table.find_all("tr")
-        header_idx = all_rows.index(header_row) if header_row in all_rows else 0
-        data_rows = all_rows[header_idx + 1:]
-
-    date_months = re.compile(r"janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc|\d{2}/\d{2}", re.I)
-
-    for row in data_rows:
-        cells = row.find_all("td")
-        texts = [c.get_text(strip=True) for c in cells]
-        if not texts:
+    for cell in name_cells:
+        row_num = int(cell["id"].split("_")[1])
+        nom = cell.get_text(strip=True)
+        if not nom or nom.startswith("id_"):
             continue
-
-        def get_col(name, fallback_idx):
-            idx = col_indices.get(name, fallback_idx)
-            return texts[idx] if idx < len(texts) else ""
-
-        nom = get_col("TOURNOI", 3)
-        club = get_col("CLUB", 4)
-        debut = get_col("DÉBUT", 5)
-        fin = get_col("FIN", 6)
-        ville = get_col("VILLE", 7)
-        inscr = get_col("INSCR. avant", 8)
-
-        # Garder uniquement les vraies lignes de tournoi
-        if (nom and len(nom) > 5
-                and not nom.startswith("id_")
-                and not nom.startswith("TOURNOI")
-                and (date_months.search(debut) or date_months.search(fin))):
-            tournaments.append({
-                "nom": nom, "club": club, "debut": debut,
-                "fin": fin, "ville": ville, "inscription_avant": inscr,
-            })
+        tournaments.append({
+            "nom": nom,
+            "club": get_cell(row_num, COL["club"]),
+            "debut": get_cell(row_num, COL["debut"]),
+            "fin": get_cell(row_num, COL["fin"]),
+            "ville": get_cell(row_num, COL["ville"]),
+            "inscription_avant": get_cell(row_num, COL["inscription_avant"]),
+        })
 
     return tournaments
 

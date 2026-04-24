@@ -12,6 +12,7 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 def fetch_tournaments() -> list[dict]:
     from playwright.sync_api import sync_playwright
+    from bs4 import BeautifulSoup
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -24,57 +25,96 @@ def fetch_tournaments() -> list[dict]:
         try:
             resp = page.goto(URL, wait_until="networkidle", timeout=30000)
             if resp and resp.status == 503:
-                print(f"Site indisponible (503) — on réessaie au prochain run.")
+                print("Site indisponible (503) — on réessaie au prochain run.")
                 browser.close()
-                return None  # None = erreur temporaire, pas de mise à jour d'état
+                return None
 
-            # Attendre que le tableau de tournois soit chargé
-            page.wait_for_timeout(4000)
-
-            # Extraire les lignes du tableau principal
-            # Dans WebDev, les lignes de données ont des classes ou IDs spécifiques
-            # On cherche les lignes qui contiennent nom de tournoi + dates
-            tournaments = page.evaluate("""() => {
-                const results = [];
-
-                // Chercher toutes les tables et trouver celle des tournois
-                // Les tournois ont typiquement: TOURNOI, CLUB, DÉBUT, FIN, VILLE dans les colonnes
-                const allRows = document.querySelectorAll('tr');
-                let headerRow = null;
-                let headerCols = [];
-
-                for (const row of allRows) {
-                    const cells = Array.from(row.querySelectorAll('td'));
-                    const texts = cells.map(c => c.innerText.trim());
-
-                    // Détecter la ligne d'en-tête
-                    if (texts.includes('TOURNOI') && texts.includes('CLUB') && texts.includes('VILLE')) {
-                        headerCols = texts;
-                        headerRow = row;
-                        continue;
-                    }
-
-                    // Si on a trouvé l'en-tête, les prochaines lignes non-vides sont des données
-                    if (headerRow && cells.length >= 5) {
-                        const nom = texts[headerCols.indexOf('TOURNOI')] || texts[3] || '';
-                        const club = texts[headerCols.indexOf('CLUB')] || texts[4] || '';
-                        const debut = texts[headerCols.indexOf('DÉBUT')] || texts[5] || '';
-                        const fin = texts[headerCols.indexOf('FIN')] || texts[6] || '';
-                        const ville = texts[headerCols.indexOf('VILLE')] || texts[7] || '';
-                        const inscr = texts.find(t => t.includes('Avr') || t.includes('Mai') || t.includes('Jui') || t.includes('Sep') || t.includes('Oct') || t.includes('Nov')) || '';
-
-                        // Filtrer les lignes vides ou parasites
-                        if (nom && nom.length > 3 && !nom.startsWith('id_') && debut && debut.match(/\\d/)) {
-                            results.push({ nom, club, debut, fin, ville, inscription_avant: inscr });
-                        }
-                    }
-                }
-
-                return results;
-            }""")
-
+            page.wait_for_timeout(5000)
+            html = page.content()
         finally:
             browser.close()
+
+    # Sauvegarder le HTML pour debug (visible dans les artifacts GitHub)
+    with open("debug_page.html", "w", encoding="utf-8") as f:
+        f.write(html)
+
+    soup = BeautifulSoup(html, "html.parser")
+    return _parse_tournaments(soup)
+
+
+def _parse_tournaments(soup) -> list[dict]:
+    from bs4 import BeautifulSoup
+    import re
+
+    tournaments = []
+
+    # Dans WebDev (PCSOFT), le tableau principal a un id commençant par 'ctz'
+    # Les lignes de données ont des ids comme 'A7_ligne_0', 'WD_ligne_A7_0', ou des classes spécifiques
+    # Stratégie: chercher la table dont les headers contiennent TOURNOI + DÉBUT + VILLE
+
+    all_tables = soup.find_all("table")
+    header_table = None
+    col_indices = {}
+
+    for table in all_tables:
+        # Chercher une ligne qui contient les colonnes TOURNOI, DÉBUT, VILLE
+        header_row = table.find("tr", id=lambda x: x and "TITRES" in x)
+        if not header_row:
+            # Chercher dans les premières lignes
+            rows = table.find_all("tr", limit=3)
+            for row in rows:
+                texts = [td.get_text(strip=True) for td in row.find_all("td")]
+                if "TOURNOI" in texts and "VILLE" in texts:
+                    header_row = row
+                    break
+
+        if header_row:
+            headers = [td.get_text(strip=True) for td in header_row.find_all("td")]
+            if "TOURNOI" in headers:
+                header_table = table
+                col_indices = {h: i for i, h in enumerate(headers) if h}
+                break
+
+    if not header_table:
+        print("Table de tournois non trouvée dans le HTML rendu.")
+        return []
+
+    # Les lignes de données: dans WebDev, elles ont souvent un id avec un numéro
+    data_rows = header_table.find_all("tr", id=re.compile(r"A\d+_\d+|ligne"))
+    if not data_rows:
+        # Fallback: toutes les lignes après l'en-tête
+        all_rows = header_table.find_all("tr")
+        header_idx = all_rows.index(header_row) if header_row in all_rows else 0
+        data_rows = all_rows[header_idx + 1:]
+
+    date_months = re.compile(r"janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc|\d{2}/\d{2}", re.I)
+
+    for row in data_rows:
+        cells = row.find_all("td")
+        texts = [c.get_text(strip=True) for c in cells]
+        if not texts:
+            continue
+
+        def get_col(name, fallback_idx):
+            idx = col_indices.get(name, fallback_idx)
+            return texts[idx] if idx < len(texts) else ""
+
+        nom = get_col("TOURNOI", 3)
+        club = get_col("CLUB", 4)
+        debut = get_col("DÉBUT", 5)
+        fin = get_col("FIN", 6)
+        ville = get_col("VILLE", 7)
+        inscr = get_col("INSCR. avant", 8)
+
+        # Garder uniquement les vraies lignes de tournoi
+        if (nom and len(nom) > 5
+                and not nom.startswith("id_")
+                and not nom.startswith("TOURNOI")
+                and (date_months.search(debut) or date_months.search(fin))):
+            tournaments.append({
+                "nom": nom, "club": club, "debut": debut,
+                "fin": fin, "ville": ville, "inscription_avant": inscr,
+            })
 
     return tournaments
 

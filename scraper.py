@@ -143,6 +143,16 @@ def main():
     known = load_state()
     new_ones = [t for t in tournaments if make_key(t) not in known]
 
+    # Trier par deadline d'inscription la plus proche en premier
+    def parse_date(d: str):
+        try:
+            parts = d.split("-")
+            return (int(parts[2]), int(parts[1]), int(parts[0]))
+        except Exception:
+            return (9999, 99, 99)
+
+    new_ones.sort(key=lambda t: parse_date(t["inscription_avant"]))
+
     for t in new_ones:
         msg = (
             f"🎾 <b>Nouveau tournoi FRMT !</b>\n\n"

@@ -149,22 +149,33 @@ def main():
         print("Aucun tournoi détecté — la structure HTML a peut-être changé.")
         sys.exit(0)
 
-    known = load_state()
-    new_ones = [t for t in tournaments if make_key(t) not in known]
+    today = datetime.now(timezone.utc).date()
 
-    # Trier par deadline d'inscription la plus proche en premier
     def parse_date(d: str):
         try:
-            parts = d.split("-")
-            return (int(parts[2]), int(parts[1]), int(parts[0]))
+            j, m, y = d.split("-")
+            return (int(y), int(m), int(j))
         except Exception:
             return (9999, 99, 99)
 
-    new_ones.sort(key=lambda t: parse_date(t["inscription_avant"]))
+    def is_open(t: dict) -> bool:
+        y, m, j = parse_date(t["inscription_avant"])
+        from datetime import date
+        try:
+            return date(y, m, j) >= today
+        except Exception:
+            return False
+
+    known = load_state()
+    new_ones = [t for t in tournaments if make_key(t) not in known]
+
+    # 🟢 Inscriptions ouvertes en premier (deadline future), triées par urgence
+    new_ones.sort(key=lambda t: (0 if is_open(t) else 1, parse_date(t["inscription_avant"])))
 
     for t in new_ones:
+        voyant = "🟢" if is_open(t) else "🔴"
         msg = (
-            f"🎾 <b>Nouveau tournoi FRMT !</b>\n\n"
+            f"🎾 <b>Nouveau tournoi FRMT !</b> {voyant}\n\n"
             f"<b>{t['nom']}</b>\n"
             f"📍 {t['ville']} — {t['club']}\n"
             f"📅 Du {t['debut']} au {t['fin']}\n"

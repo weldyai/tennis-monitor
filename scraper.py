@@ -49,27 +49,46 @@ def _parse_tournaments(soup) -> list[dict]:
     # col 3=TOURNOI, 4=CLUB, 7=DÉBUT, 8=FIN, 9=VILLE, 10=INSCR.avant
     COL = {"nom": 3, "club": 4, "debut": 7, "fin": 8, "ville": 9, "inscription_avant": 10}
 
+    DATE_RE = re.compile(r"\d{2}/\d{2}/\d{4}|\d{1,2}\s+\w+\s+\d{4}")
+    GARBAGE_KEYWORDS = {"id_", "LICENCE", "CLT.", "IDM/F", "Colonne", "Action?", "Excel"}
+
     def get_cell(row_num, col_num):
         el = soup.find("div", id=f"A7_{row_num}_{col_num}")
         return el.get_text(strip=True) if el else ""
 
-    # Compter les lignes disponibles via la colonne TOURNOI
+    def is_valid_tournament(t: dict) -> bool:
+        nom = t["nom"]
+        # Nom : longueur raisonnable, pas de keywords d'UI/header
+        if not nom or len(nom) > 200:
+            return False
+        if any(kw in nom for kw in GARBAGE_KEYWORDS):
+            return False
+        # Dates : debut et fin doivent ressembler à des dates
+        if not DATE_RE.search(t["debut"]) or not DATE_RE.search(t["fin"]):
+            return False
+        # Ville : non vide, pas trop longue
+        if not t["ville"] or len(t["ville"]) > 100:
+            return False
+        return True
+
     name_cells = soup.find_all("div", id=re.compile(r"^A7_\d+_3$"))
     tournaments = []
 
     for cell in name_cells:
         row_num = int(cell["id"].split("_")[1])
         nom = cell.get_text(strip=True)
-        if not nom or nom.startswith("id_"):
+        if not nom:
             continue
-        tournaments.append({
+        t = {
             "nom": nom,
             "club": get_cell(row_num, COL["club"]),
             "debut": get_cell(row_num, COL["debut"]),
             "fin": get_cell(row_num, COL["fin"]),
             "ville": get_cell(row_num, COL["ville"]),
             "inscription_avant": get_cell(row_num, COL["inscription_avant"]),
-        })
+        }
+        if is_valid_tournament(t):
+            tournaments.append(t)
 
     return tournaments
 

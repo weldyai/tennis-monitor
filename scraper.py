@@ -60,8 +60,9 @@ def fetch_tournaments() -> list[dict]:
     with open("debug_page.html", "w", encoding="utf-8") as f:
         f.write(html)
 
-    # Parser le texte brut (HTML + AJAX) — BeautifulSoup altère les balises XML <COLONNE>
-    combined_raw = html + "\n".join(ajax_bodies)
+    # AJAX en premier (tournois les plus récents dans l'ordre du site), puis HTML initial
+    # BeautifulSoup altère les balises XML <COLONNE> — on parse le texte brut directement
+    combined_raw = "\n".join(ajax_bodies) + "\n" + html
     return _parse_tournaments_raw(combined_raw)
 
 
@@ -245,8 +246,9 @@ def main():
     known = load_state()
     new_ones = [t for t in tournaments if make_key(t) not in known]
 
-    # 🟢 Inscriptions ouvertes en premier (deadline future), triées par urgence
-    new_ones.sort(key=lambda t: (0 if is_open(t) else 1, parse_date(t["inscription_avant"])))
+    # Conserver l'ordre du site : 🟢 ouverts en premier, puis 🔴 fermés
+    # L'ordre AJAX (nouveaux en tête) est préservé dans la liste tournaments
+    new_ones.sort(key=lambda t: 0 if is_open(t) else 1)
 
     for t in new_ones:
         voyant = "🟢" if is_open(t) else "🔴"

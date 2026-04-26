@@ -2,7 +2,7 @@ name: Tennis Monitor
 
 on:
   schedule:
-    - cron: "0 * * * *"   # toutes les heures
+    - cron: "0,30 * * * *"   # toutes les 30 minutes
   workflow_dispatch:        # déclenchement manuel depuis GitHub
 
 permissions:

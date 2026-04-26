@@ -129,15 +129,24 @@ def send_telegram(message: str):
 
 
 def main():
+    import time
     tournaments = fetch_tournaments()
 
     if tournaments is None:
         print("Erreur temporaire — état non modifié.")
-        sys.exit(0)  # Ne pas faire échouer le workflow
+        sys.exit(0)
+
+    # Si résultat trop faible, retenter une fois après 10s (cache serveur potentiel)
+    if len(tournaments) < 10:
+        print(f"Seulement {len(tournaments)} tournois — nouvelle tentative dans 10s...")
+        time.sleep(10)
+        retry = fetch_tournaments()
+        if retry and len(retry) > len(tournaments):
+            tournaments = retry
+            print(f"Retry: {len(tournaments)} tournois")
 
     if not tournaments:
         print("Aucun tournoi détecté — la structure HTML a peut-être changé.")
-        # On envoie une alerte une fois si le parsing échoue
         sys.exit(0)
 
     known = load_state()

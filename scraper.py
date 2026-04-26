@@ -44,51 +44,61 @@ def fetch_tournaments() -> list[dict]:
 
 def _parse_tournaments(soup) -> list[dict]:
     import re
+    from html import unescape
 
-    # WebDev (PCSOFT) pattern: données dans des divs id="A7_{row}_{col}"
-    # col 3=TOURNOI, 4=CLUB, 7=DÉBUT, 8=FIN, 9=VILLE, 10=INSCR.avant
-    COL = {"nom": 3, "club": 4, "debut": 7, "fin": 8, "ville": 9, "inscription_avant": 10}
+    DATE_RE = re.compile(r"\d{2}[/-]\d{2}[/-]\d{4}")
 
-    DATE_RE = re.compile(r"\d{2}[/-]\d{2}[/-]\d{4}|\d{1,2}\s+\w+\s+\d{4}")
-    GARBAGE_KEYWORDS = {"id_", "LICENCE", "CLT.", "IDM/F", "Colonne", "Action?", "Excel"}
+    # Les données réelles sont dans le payload XML encodé en \x dans le JS,
+    # pas dans les divs A7_*_* (partiellement rendus). On parse le XML directement.
+    raw_html = str(soup)
 
-    def get_cell(row_num, col_num):
-        el = soup.find("div", id=f"A7_{row_num}_{col_num}")
-        return el.get_text(strip=True) if el else ""
+    def decode_hex(s: str) -> str:
+        result = []
+        i = 0
+        while i < len(s):
+            if s[i:i+2] == r"\x" and i + 4 <= len(s):
+                try:
+                    result.append(chr(int(s[i+2:i+4], 16)))
+                    i += 4
+                    continue
+                except ValueError:
+                    pass
+            result.append(s[i])
+            i += 1
+        return "".join(result)
 
-    def is_valid_tournament(t: dict) -> bool:
-        nom = t["nom"]
-        # Nom : longueur raisonnable, pas de keywords d'UI/header
-        if not nom or len(nom) > 200:
-            return False
-        if any(kw in nom for kw in GARBAGE_KEYWORDS):
-            return False
-        # Dates : debut et fin doivent ressembler à des dates
-        if not DATE_RE.search(t["debut"]) or not DATE_RE.search(t["fin"]):
-            return False
-        # Ville : non vide, pas trop longue
-        if not t["ville"] or len(t["ville"]) > 100:
-            return False
-        return True
+    decoded = decode_hex(raw_html)
 
-    name_cells = soup.find_all("div", id=re.compile(r"^A7_\d+_3$"))
+    # Chercher directement les blocs: <COLONNE>TOURNOI...</COLONNE> suivis de club, dates, ville
+    # Le CDATA dans CORPS contient des <COLONNE> qui cassent un split naïf — on cherche
+    # le pattern après la fin du CDATA (</COLONNE> juste avant le nom du tournoi)
+    pattern = re.compile(
+        r"<COLONNE>([^<]*TOURNOI[^<]{0,150})</COLONNE>"   # nom
+        r"<COLONNE>([^<]*)</COLONNE>"                      # club
+        r"(?:<COLONNE[^/]*/?>)*"                           # colonnes vides optionnelles
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"         # debut
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"         # fin
+        r"<COLONNE>([^<]+)</COLONNE>"                      # ville
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>",        # inscription_avant
+        re.DOTALL,
+    )
+
     tournaments = []
+    seen = set()
 
-    for cell in name_cells:
-        row_num = int(cell["id"].split("_")[1])
-        nom = cell.get_text(strip=True)
-        if not nom:
+    for m in pattern.finditer(decoded):
+        nom = unescape(m.group(1).strip())
+        if nom in seen:
             continue
-        t = {
+        seen.add(nom)
+        tournaments.append({
             "nom": nom,
-            "club": get_cell(row_num, COL["club"]),
-            "debut": get_cell(row_num, COL["debut"]),
-            "fin": get_cell(row_num, COL["fin"]),
-            "ville": get_cell(row_num, COL["ville"]),
-            "inscription_avant": get_cell(row_num, COL["inscription_avant"]),
-        }
-        if is_valid_tournament(t):
-            tournaments.append(t)
+            "club": unescape(m.group(2).strip()),
+            "debut": m.group(3),
+            "fin": m.group(4),
+            "ville": unescape(m.group(5).strip()),
+            "inscription_avant": m.group(6),
+        })
 
     return tournaments
 

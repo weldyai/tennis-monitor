@@ -14,6 +14,8 @@ def fetch_tournaments() -> list[dict]:
     from playwright.sync_api import sync_playwright
     from bs4 import BeautifulSoup
 
+    ajax_bodies = []
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -22,24 +24,98 @@ def fetch_tournaments() -> list[dict]:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         })
 
+        def on_response(resp):
+            try:
+                if "PAGE_ACCUEIL" in resp.url:
+                    body = resp.body()
+                    if len(body) > 200:
+                        ajax_bodies.append(body.decode("utf-8", errors="replace"))
+            except Exception:
+                pass
+
+        page.on("response", on_response)
+
         try:
-            resp = page.goto(URL, wait_until="networkidle", timeout=30000)
+            resp = page.goto(URL, wait_until="domcontentloaded", timeout=30000)
             if resp and resp.status == 503:
                 print("Site indisponible (503) — on réessaie au prochain run.")
                 browser.close()
                 return None
 
-            page.wait_for_timeout(5000)
+            # Attendre que le JS WebDev soit initialisé
+            page.wait_for_timeout(6000)
+
+            # Scroller vers le haut de la table — charge les tournois récents via AJAX
+            page.mouse.move(640, 200)
+            for _ in range(20):
+                page.mouse.wheel(0, -500)
+                page.wait_for_timeout(200)
+            page.wait_for_timeout(3000)
+
             html = page.content()
         finally:
             browser.close()
 
-    # Sauvegarder le HTML pour debug (visible dans les artifacts GitHub)
+    # Sauvegarder le HTML pour debug
     with open("debug_page.html", "w", encoding="utf-8") as f:
         f.write(html)
 
-    soup = BeautifulSoup(html, "html.parser")
-    return _parse_tournaments(soup)
+    # Parser le texte brut (HTML + AJAX) — BeautifulSoup altère les balises XML <COLONNE>
+    combined_raw = html + "\n".join(ajax_bodies)
+    return _parse_tournaments_raw(combined_raw)
+
+
+def _parse_tournaments_raw(raw_text: str) -> list[dict]:
+    """Parse directement le texte brut (HTML + AJAX) sans passer par BeautifulSoup."""
+    import re
+    from html import unescape
+
+    def decode_hex(s: str) -> str:
+        result = []
+        i = 0
+        while i < len(s):
+            if s[i:i+2] == r"\x" and i + 4 <= len(s):
+                try:
+                    result.append(chr(int(s[i+2:i+4], 16)))
+                    i += 4
+                    continue
+                except ValueError:
+                    pass
+            result.append(s[i])
+            i += 1
+        return "".join(result)
+
+    decoded = decode_hex(raw_text)
+
+    pattern = re.compile(
+        r"<COLONNE>([^<]*TOURNOI[^<]{0,150})</COLONNE>"
+        r"<COLONNE>([^<]*)</COLONNE>"
+        r"(?:<COLONNE[^/]*/?>)*"
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"
+        r"<COLONNE>([^<]+)</COLONNE>"
+        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>",
+        re.DOTALL,
+    )
+
+    tournaments = []
+    seen = set()
+
+    for m in pattern.finditer(decoded):
+        nom = unescape(m.group(1).strip())
+        if nom in seen:
+            continue
+        seen.add(nom)
+        tournaments.append({
+            "nom": nom,
+            "club": unescape(m.group(2).strip()),
+            "debut": m.group(3),
+            "fin": m.group(4),
+            "ville": unescape(m.group(5).strip()),
+            "inscription_avant": m.group(6),
+        })
+
+    return tournaments
 
 
 def _parse_tournaments(soup) -> list[dict]:

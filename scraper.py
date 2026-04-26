@@ -49,7 +49,7 @@ def _parse_tournaments(soup) -> list[dict]:
     # col 3=TOURNOI, 4=CLUB, 7=DÉBUT, 8=FIN, 9=VILLE, 10=INSCR.avant
     COL = {"nom": 3, "club": 4, "debut": 7, "fin": 8, "ville": 9, "inscription_avant": 10}
 
-    DATE_RE = re.compile(r"\d{2}/\d{2}/\d{4}|\d{1,2}\s+\w+\s+\d{4}")
+    DATE_RE = re.compile(r"\d{2}[/-]\d{2}[/-]\d{4}|\d{1,2}\s+\w+\s+\d{4}")
     GARBAGE_KEYWORDS = {"id_", "LICENCE", "CLT.", "IDM/F", "Colonne", "Action?", "Excel"}
 
     def get_cell(row_num, col_num):

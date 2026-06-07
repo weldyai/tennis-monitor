@@ -86,14 +86,9 @@ def answer_callback(callback_query_id: str, text: str = ""):
 
 
 def poll_updates(offset: int) -> list[dict]:
-    try:
-        data = _tg("getUpdates", offset=offset, timeout=3, allowed_updates=["callback_query"])
-        return data.get("result", [])
-    except RuntimeError as e:
-        if "Conflict" in str(e):
-            print("getUpdates conflict (autre run actif) — callbacks ignorés ce run.")
-            return []
-        raise
+    # timeout=0 = réponse immédiate, évite les conflits entre runs CI
+    data = _tg("getUpdates", offset=offset, timeout=0, allowed_updates=["callback_query"])
+    return data.get("result", [])
 
 
 # ─── State ───────────────────────────────────────────────────────────────────

@@ -88,9 +88,7 @@ def answer_callback(callback_query_id: str, text: str = ""):
 def poll_updates(offset: int) -> list[dict]:
     try:
         data = _tg("getUpdates", offset=offset, timeout=0)
-        updates = data.get("result", [])
-        print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
-        return updates
+        return data.get("result", [])
     except RuntimeError as e:
         if "Conflict" in str(e):
             print("getUpdates conflict — ignoré ce run.")

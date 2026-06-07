@@ -23,14 +23,6 @@ jobs:
           pip install requests playwright beautifulsoup4
           playwright install chromium --with-deps
 
-      - name: Check Telegram webhook
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('Webhook URL:', d['result'].get('url', '(none)') or '(none - polling OK)')"
-          echo "--- Raw getUpdates ---"
-          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=0&timeout=0" | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d, indent=2))"
-
       - name: Run scraper
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

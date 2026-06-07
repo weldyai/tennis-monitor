@@ -291,7 +291,9 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
             elif tab_label == "Convocations":
                 results["convocation"] = _check_convocation(bodies)
     except Exception as e:
+        import traceback
         print(f"  fetch_detail({nom}): {e}")
+        traceback.print_exc()
     finally:
         browser.close()
         pw.stop()

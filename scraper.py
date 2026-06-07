@@ -87,8 +87,13 @@ def answer_callback(callback_query_id: str, text: str = ""):
 
 def poll_updates(offset: int) -> list[dict]:
     # timeout=0 = réponse immédiate, évite les conflits entre runs CI
-    data = _tg("getUpdates", offset=offset, timeout=0, allowed_updates=["callback_query"])
-    return data.get("result", [])
+    # Pas de allowed_updates filter pour ne rien rater
+    data = _tg("getUpdates", offset=offset, timeout=0)
+    updates = data.get("result", [])
+    print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
+    for u in updates:
+        print(f"  update_id={u.get('update_id')} type={'callback_query' if 'callback_query' in u else list(u.keys())}")
+    return [u for u in updates if "callback_query" in u]
 
 
 # ─── State ───────────────────────────────────────────────────────────────────

@@ -86,14 +86,16 @@ def answer_callback(callback_query_id: str, text: str = ""):
 
 
 def poll_updates(offset: int) -> list[dict]:
-    # timeout=0 = réponse immédiate, évite les conflits entre runs CI
-    # Pas de allowed_updates filter pour ne rien rater
-    data = _tg("getUpdates", offset=offset, timeout=0)
-    updates = data.get("result", [])
-    print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
-    for u in updates:
-        print(f"  update_id={u.get('update_id')} type={'callback_query' if 'callback_query' in u else list(u.keys())}")
-    return [u for u in updates if "callback_query" in u]
+    try:
+        data = _tg("getUpdates", offset=offset, timeout=0)
+        updates = data.get("result", [])
+        print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
+        return updates
+    except RuntimeError as e:
+        if "Conflict" in str(e):
+            print("getUpdates conflict — ignoré ce run.")
+            return []
+        raise
 
 
 # ─── State ───────────────────────────────────────────────────────────────────
@@ -302,8 +304,8 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
 
 def process_callbacks(state: dict) -> bool:
     """
-    Poll Telegram for callback_query (Suivre/Passer button presses).
-    Updates state["tracked"] accordingly.
+    Poll Telegram for messages starting with /track or /untrack.
+    Supports: /track <nom_partiel>  and  /untrack <nom_partiel>
     Returns True if state was modified.
     """
     offset = state.get("telegram_offset", 0)
@@ -312,49 +314,73 @@ def process_callbacks(state: dict) -> bool:
         return False
 
     modified = False
+    id_map = state.get("id_map", {})
+    id_map_meta = state.get("id_map_meta", {})
+
     for upd in updates:
         offset = max(offset, upd["update_id"] + 1)
+        msg = upd.get("message") or upd.get("channel_post")
         cb = upd.get("callback_query")
-        if not cb:
-            continue
-        data = cb.get("data", "")
-        cb_id = cb["id"]
-        msg_id = cb["message"]["message_id"]
-        sid = data.split(":", 1)[1] if ":" in data else ""
-        key = state.get("id_map", {}).get(sid)
 
-        if data.startswith("track:") and key:
-            if key not in state.get("tracked", {}):
-                t_info = state.get("id_map_meta", {}).get(sid, {})
-                state.setdefault("tracked", {})[key] = {
-                    "nom": t_info.get("nom", key.split("|")[0]),
-                    "ville": t_info.get("ville", ""),
-                    "club": t_info.get("club", ""),
-                    "debut": t_info.get("debut", ""),
-                    "fin": t_info.get("fin", ""),
-                    "inscription_avant": t_info.get("inscription_avant", ""),
-                    "last_inscriptions": "",
-                    "convocation_notified": False,
-                    "message_id": msg_id,
-                }
-                answer_callback(cb_id, "✅ Tournoi suivi !")
-                try:
-                    edit_message_reply_markup(msg_id, {"inline_keyboard": [[
-                        {"text": "✅ Suivi", "callback_data": "noop"}
-                    ]]})
-                except Exception:
-                    pass
-                print(f"Tracking: {key}")
-                modified = True
-            else:
-                answer_callback(cb_id, "Déjà suivi.")
-
-        elif data.startswith("skip:"):
-            answer_callback(cb_id, "OK, ignoré.")
+        # Support commandes texte /track et /untrack
+        text = ""
+        if msg:
+            text = msg.get("text", "")
+        elif cb:
+            # Ancien système inline — gérer noop silencieusement
             try:
-                edit_message_reply_markup(msg_id, {})
+                answer_callback(cb["id"])
             except Exception:
                 pass
+            continue
+
+        if not text.startswith("/track") and not text.startswith("/untrack"):
+            continue
+
+        parts = text.split(None, 1)
+        cmd = parts[0].lower()
+        query = parts[1].strip().upper() if len(parts) > 1 else ""
+
+        # Chercher le tournoi dans id_map_meta
+        match_key = None
+        match_meta = None
+        for sid, meta in id_map_meta.items():
+            if query and query in meta.get("nom", "").upper():
+                match_key = id_map.get(sid)
+                match_meta = meta
+                break
+
+        if cmd == "/track":
+            if not query:
+                send_telegram("Usage: /track <nom_partiel>\nEx: /track STCO")
+            elif not match_key:
+                send_telegram(f"❌ Tournoi '{query}' non trouvé dans la liste courante.")
+            elif match_key in state.get("tracked", {}):
+                send_telegram(f"✅ {match_meta['nom']} est déjà suivi.")
+            else:
+                state.setdefault("tracked", {})[match_key] = {
+                    "nom": match_meta["nom"],
+                    "ville": match_meta.get("ville", ""),
+                    "club": match_meta.get("club", ""),
+                    "debut": match_meta.get("debut", ""),
+                    "fin": match_meta.get("fin", ""),
+                    "inscription_avant": match_meta.get("inscription_avant", ""),
+                    "last_inscriptions": "",
+                    "convocation_notified": False,
+                }
+                send_telegram(f"🔔 Tracking activé : {match_meta['nom']}")
+                print(f"Tracking: {match_key}")
+                modified = True
+
+        elif cmd == "/untrack":
+            if not query:
+                send_telegram("Usage: /untrack <nom_partiel>")
+            elif match_key and match_key in state.get("tracked", {}):
+                del state["tracked"][match_key]
+                send_telegram(f"🔕 Tracking désactivé : {match_meta['nom']}")
+                modified = True
+            else:
+                send_telegram(f"❌ Tournoi '{query}' non trouvé dans les tournois suivis.")
 
     state["telegram_offset"] = offset
     return modified
@@ -479,15 +505,11 @@ def main():
             f"📅 Du {t['debut']} au {t['fin']}\n"
             f"⏰ Inscription avant : {t['inscription_avant']}"
             f"{inscr_section}"
-            f"👉 <a href=\"{URL}\">Voir le tableau</a>"
+            f"👉 <a href=\"{URL}\">Voir le tableau</a>\n\n"
+            f"<i>Pour suivre : /track {t['nom'].split()[-1] if t['nom'].split() else t['club']}</i>"
         )
 
-        keyboard = {"inline_keyboard": [[
-            {"text": "🔔 Suivre", "callback_data": f"track:{sid}"},
-            {"text": "❌ Passer", "callback_data": f"skip:{sid}"},
-        ]]}
-
-        msg_id = send_telegram(msg, reply_markup=keyboard)
+        msg_id = send_telegram(msg)
         print(f"Notifié : {t['nom']} (msg_id={msg_id})")
 
         # Stocker le mapping sid → key + meta pour traiter le callback plus tard

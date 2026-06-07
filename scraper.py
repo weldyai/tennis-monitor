@@ -412,9 +412,11 @@ def check_tracked_tournaments(state: dict) -> bool:
             tabs.append("Convocations")
 
         detail = fetch_detail(nom, tabs)
+        print(f"  fetch_detail result: {detail}")
 
         # Inscriptions diff
         new_inscr = detail.get("inscriptions", "")
+        print(f"  new_inscr={repr(new_inscr)}, last={repr(info.get('last_inscriptions',''))}")
         if new_inscr and new_inscr != info.get("last_inscriptions", ""):
             prev = info.get("last_inscriptions", "")
             msg = (

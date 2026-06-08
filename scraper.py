@@ -74,6 +74,26 @@ def send_telegram(message: str, reply_markup: dict | None = None) -> int:
     return data["result"]["message_id"]
 
 
+def edit_message_reply_markup(message_id: int, reply_markup: dict | None = None):
+    _tg("editMessageReplyMarkup", chat_id=CHAT_ID, message_id=message_id,
+        reply_markup=reply_markup or {})
+
+
+def answer_callback(callback_query_id: str):
+    _tg("answerCallbackQuery", callback_query_id=callback_query_id)
+
+
+def poll_updates(offset: int) -> list[dict]:
+    try:
+        data = _tg("getUpdates", offset=offset, timeout=0,
+                   allowed_updates=["message", "channel_post", "callback_query"])
+        return data.get("result", [])
+    except RuntimeError as e:
+        if "Conflict" in str(e):
+            print("getUpdates conflict — ignoré.")
+            return []
+        raise
+
 
 
 # ─── State ───────────────────────────────────────────────────────────────────
@@ -280,48 +300,65 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
 
 # ─── Tracking logic ──────────────────────────────────────────────────────────
 
-def track_tournament(state: dict, sid: str) -> str:
-    """
-    Ajoute un tournoi au tracking via son short_id.
-    Appelé par Claude directement (pas via getUpdates).
-    Retourne un message de confirmation.
-    """
+def process_callbacks(state: dict) -> bool:
+    """Lit les callbacks Telegram (boutons Suivre/Passer). Retourne True si state modifié."""
+    offset = state.get("telegram_offset", 0)
+    updates = poll_updates(offset)
+    if not updates:
+        return False
+
+    modified = False
     id_map = state.get("id_map", {})
     id_map_meta = state.get("id_map_meta", {})
-    key = id_map.get(sid)
-    meta = id_map_meta.get(sid)
-    if not key or not meta:
-        return f"❌ ID '{sid}' non trouvé."
-    if key in state.get("tracked", {}):
-        return f"✅ {meta['nom']} est déjà suivi."
-    state.setdefault("tracked", {})[key] = {
-        "nom": meta["nom"], "ville": meta.get("ville", ""),
-        "club": meta.get("club", ""), "debut": meta.get("debut", ""),
-        "fin": meta.get("fin", ""), "inscription_avant": meta.get("inscription_avant", ""),
-        "last_inscriptions": "", "convocation_notified": False,
-    }
-    print(f"Tracking activé: {key}")
-    return f"🔔 Tracking activé : {meta['nom']}"
 
+    for upd in updates:
+        new_offset = upd["update_id"] + 1
+        if new_offset > offset:
+            offset = new_offset
+            modified = True
 
-def untrack_tournament(state: dict, query: str) -> str:
-    """Désactive le tracking via short_id ou nom partiel."""
-    id_map = state.get("id_map", {})
-    id_map_meta = state.get("id_map_meta", {})
-    match_key, match_meta = None, None
-    if query.lower() in id_map_meta:
-        match_key = id_map.get(query.lower())
-        match_meta = id_map_meta[query.lower()]
-    else:
-        for sid, meta in id_map_meta.items():
-            if query.upper() in meta.get("nom", "").upper():
-                match_key = id_map.get(sid)
-                match_meta = meta
-                break
-    if match_key and match_key in state.get("tracked", {}):
-        del state["tracked"][match_key]
-        return f"🔕 Tracking désactivé : {match_meta['nom']}"
-    return f"❌ '{query}' non trouvé dans les tournois suivis."
+        cb = upd.get("callback_query")
+        if not cb:
+            continue
+
+        try:
+            answer_callback(cb["id"])
+        except Exception:
+            pass
+
+        data = cb.get("data", "")
+
+        if data.startswith("track:"):
+            sid_cb = data[6:]
+            key = id_map.get(sid_cb)
+            meta = id_map_meta.get(sid_cb)
+            if key and meta and key not in state.get("tracked", {}):
+                state.setdefault("tracked", {})[key] = {
+                    "nom": meta["nom"], "ville": meta.get("ville", ""),
+                    "club": meta.get("club", ""), "debut": meta.get("debut", ""),
+                    "fin": meta.get("fin", ""), "inscription_avant": meta.get("inscription_avant", ""),
+                    "last_inscriptions": "", "convocation_notified": False,
+                }
+                print(f"Tracking activé: {key}")
+                modified = True
+            if meta and meta.get("message_id"):
+                try:
+                    edit_message_reply_markup(meta["message_id"],
+                        {"inline_keyboard": [[{"text": "✅ Suivi", "callback_data": "noop"}]]})
+                except Exception:
+                    pass
+
+        elif data.startswith("pass:"):
+            sid_cb = data[5:]
+            meta = id_map_meta.get(sid_cb)
+            if meta and meta.get("message_id"):
+                try:
+                    edit_message_reply_markup(meta["message_id"], {})
+                except Exception:
+                    pass
+
+    state["telegram_offset"] = offset
+    return modified
 
 
 def check_tracked_tournaments(state: dict) -> bool:
@@ -397,7 +434,12 @@ def main():
 
     state = load_state()
 
-    # 1. Récupérer la liste des tournois
+    # 1. Traiter les callbacks Telegram (boutons Suivre/Passer)
+    cb_modified = process_callbacks(state)
+    if cb_modified:
+        save_state(state)
+
+    # 2. Récupérer la liste des tournois
     tournaments = fetch_tournament_list()
 
     if tournaments is None:
@@ -440,11 +482,14 @@ def main():
             f"📅 Du {t['debut']} au {t['fin']}\n"
             f"⏰ Inscription avant : {t['inscription_avant']}"
             f"{inscr_section}"
-            f"👉 <a href=\"{URL}\">Voir le tableau</a>\n"
-        f"<code>id:{sid}</code>"
+            f"👉 <a href=\"{URL}\">Voir le tableau</a>"
         )
 
-        msg_id = send_telegram(msg)
+        reply_markup = {"inline_keyboard": [[
+            {"text": "🔔 Suivre", "callback_data": f"track:{sid}"},
+            {"text": "⏭ Passer", "callback_data": f"pass:{sid}"},
+        ]]}
+        msg_id = send_telegram(msg, reply_markup=reply_markup)
         print(f"Notifié : {t['nom']} (msg_id={msg_id})")
 
         # Stocker le mapping sid → key + meta (avec message_id pour édition)

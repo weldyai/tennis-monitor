@@ -147,5 +147,6 @@
       "message_id": 823
     }
   },
-  "tracked": {}
+  "tracked": {},
+  "telegram_offset": 0
 }

@@ -337,20 +337,25 @@ def process_callbacks(state: dict) -> bool:
 
         parts = text.split(None, 1)
         cmd = parts[0].lower()
-        query = parts[1].strip().upper() if len(parts) > 1 else ""
+        query = parts[1].strip() if len(parts) > 1 else ""
 
-        # Chercher le tournoi dans id_map_meta
+        # Chercher le tournoi : short_id exact d'abord, puis substring sur le nom
         match_key = None
         match_meta = None
-        for sid, meta in id_map_meta.items():
-            if query and query in meta.get("nom", "").upper():
-                match_key = id_map.get(sid)
-                match_meta = meta
-                break
+        sid_lower = query.lower()
+        if sid_lower in id_map_meta:
+            match_key = id_map.get(sid_lower)
+            match_meta = id_map_meta[sid_lower]
+        else:
+            for sid, meta in id_map_meta.items():
+                if query and query.upper() in meta.get("nom", "").upper():
+                    match_key = id_map.get(sid)
+                    match_meta = meta
+                    break
 
         if cmd == "/track":
             if not query:
-                send_telegram("Usage: /track <nom_partiel>\nEx: /track STCO")
+                send_telegram("Usage: /track <id>\nEx: /track a1b2c3d4")
             elif not match_key:
                 send_telegram(f"❌ Tournoi '{query}' non trouvé dans la liste courante.")
             elif match_key in state.get("tracked", {}):
@@ -372,7 +377,7 @@ def process_callbacks(state: dict) -> bool:
 
         elif cmd == "/untrack":
             if not query:
-                send_telegram("Usage: /untrack <nom_partiel>")
+                send_telegram("Usage: /untrack <id>")
             elif match_key and match_key in state.get("tracked", {}):
                 del state["tracked"][match_key]
                 send_telegram(f"🔕 Tracking désactivé : {match_meta['nom']}")
@@ -504,7 +509,7 @@ def main():
             f"⏰ Inscription avant : {t['inscription_avant']}"
             f"{inscr_section}"
             f"👉 <a href=\"{URL}\">Voir le tableau</a>\n\n"
-            f"<i>Pour suivre : /track {t['club']}</i>"
+            f"<i>Pour suivre : /track {sid}</i>"
         )
 
         msg_id = send_telegram(msg)

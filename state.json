@@ -3,7 +3,6 @@
     "TOURNOI TCR GRADE 4|14-02-2026|TCR",
     "TOURNOI OCBS GRADE 3-4 (annulé)|18-04-2026|OCBS",
     "TOURNOI USATT GRADE 4|09-05-2026|USATT",
-    "TOURNOI DOUBLE RTCF GRADE 3|20-06-2026|RTCF",
     "TOURNOI CAST GRADE 4|01-04-2026|CAST",
     "TOURNOI DOUBLE ASAS GRADE 2|06-06-2026|ASAS",
     "TOURNOI RTCMA GRADE 1,2 et 3|06-06-2026|RTCMA",
@@ -43,7 +42,6 @@
     "TOURNOI DOUBLE TCF GRADE 3|28-03-2026|TCF",
     "TOURNOI COC GRADE 2-3|28-03-2026|COC",
     "TOURNOI ATC GRADE 4|01-05-2026|ATC",
-    "TOURNOI STCO GRADE 3|26-06-2026|STCO",
     "TOURNOI ACSA GRADE 1,2,3|18-04-2026|ACSA",
     "TOURNOI DOUBLE RIAD GRADE 3 & 4|09-05-2026|RIAD",
     "TOURNOI TTC 10-14 ANS|25-04-2026|TTC",
@@ -54,7 +52,6 @@
     "TOURNOI DOUBLE GRADE 4 OCK|16-05-2026|OCK",
     "TOURNOI DOUBLE SM GRADE 2|30-05-2026|SM",
     "TOURNOI DOUBLE OCBS GRADE 3 & 4 (annulé)|18-04-2026|OCBS",
-    "TOURNOI DOUBLE FRMT 12 ANS|20-06-2026|COC",
     "TOURNOI RTCA GRADE 2|01-05-2026|RTCA",
     "TOURNOI TCM 10-12 ANS|30-05-2026|TCM",
     "TOURNOI WIFAQ GRADE 3-4|11-04-2026|WIFAQ"
@@ -65,32 +62,35 @@
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
     "9beee7f6": "TOURNOI ACSA 10-12 ANS|13-06-2026|ACSA",
     "eda342a5": "TOURNOI ASTT GRADE 4|13-06-2026|AST TAZA",
-    "3b0f48c6": "TOURNOI DOUBLE ASTT GRADE 4|13-06-2026|AST TAZA"
+    "3b0f48c6": "TOURNOI DOUBLE ASTT GRADE 4|13-06-2026|AST TAZA",
+    "261b30a3": "TOURNOI DOUBLE FRMT 12 ANS|20-06-2026|COC",
+    "98cdc419": "TOURNOI DOUBLE RTCF GRADE 3|20-06-2026|RTCF",
+    "f068e9d1": "TOURNOI RTCF GRADE 3|20-06-2026|RTCF"
   },
   "id_map_meta": {
     "e3e859ea": {
       "nom": "TOURNOI DOUBLE STCO GRADE 3",
-      "ville": "OUJDA",
       "club": "STCO",
       "debut": "26-06-2026",
       "fin": "28-06-2026",
+      "ville": "OUJDA",
       "inscription_avant": "21-06-2026"
     },
     "39eb62cf": {
       "nom": "TOURNOI STCO GRADE 3",
-      "ville": "OUJDA",
       "club": "STCO",
       "debut": "26-06-2026",
       "fin": "28-06-2026",
+      "ville": "OUJDA",
       "inscription_avant": "21-06-2026"
     },
     "9beee7f6": {
       "nom": "TOURNOI ACSA 10-12 ANS",
-      "ville": "",
       "club": "ACSA",
       "debut": "13-06-2026",
-      "fin": "20-06-2026",
-      "inscription_avant": "12-06-2026"
+      "fin": "28-06-2026",
+      "ville": "CASABLANCA",
+      "inscription_avant": "08-06-2026"
     },
     "eda342a5": {
       "nom": "TOURNOI ASTT GRADE 4",
@@ -107,6 +107,30 @@
       "debut": "13-06-2026",
       "fin": "21-06-2026",
       "inscription_avant": "08-06-2026"
+    },
+    "261b30a3": {
+      "nom": "TOURNOI DOUBLE FRMT 12 ANS",
+      "club": "COC",
+      "debut": "20-06-2026",
+      "fin": "21-06-2026",
+      "ville": "CASABLANCA",
+      "inscription_avant": "15-06-2026"
+    },
+    "98cdc419": {
+      "nom": "TOURNOI DOUBLE RTCF GRADE 3",
+      "club": "RTCF",
+      "debut": "20-06-2026",
+      "fin": "28-06-2026",
+      "ville": "FES",
+      "inscription_avant": "15-06-2026"
+    },
+    "f068e9d1": {
+      "nom": "TOURNOI RTCF GRADE 3",
+      "club": "RTCF",
+      "debut": "20-06-2026",
+      "fin": "28-06-2026",
+      "ville": "FES",
+      "inscription_avant": "15-06-2026"
     }
   },
   "tracked": {}

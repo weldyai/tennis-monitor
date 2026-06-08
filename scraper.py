@@ -88,7 +88,14 @@ def answer_callback(callback_query_id: str, text: str = ""):
 def poll_updates(offset: int) -> list[dict]:
     try:
         data = _tg("getUpdates", offset=offset, timeout=0)
-        return data.get("result", [])
+        updates = data.get("result", [])
+        print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
+        for u in updates:
+            msg = u.get("message") or u.get("channel_post")
+            cb = u.get("callback_query")
+            text = msg.get("text","") if msg else (cb.get("data","") if cb else "")
+            print(f"  update_id={u['update_id']} text={repr(text[:60])}")
+        return updates
     except RuntimeError as e:
         if "Conflict" in str(e):
             print("getUpdates conflict — ignoré ce run.")

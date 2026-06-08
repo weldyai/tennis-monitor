@@ -87,7 +87,8 @@ def answer_callback(callback_query_id: str, text: str = ""):
 
 def poll_updates(offset: int) -> list[dict]:
     try:
-        data = _tg("getUpdates", offset=offset, timeout=0)
+        data = _tg("getUpdates", offset=offset, timeout=0,
+                   allowed_updates=["message", "channel_post", "callback_query"])
         updates = data.get("result", [])
         print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
         for u in updates:

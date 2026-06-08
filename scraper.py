@@ -504,7 +504,7 @@ def main():
             f"⏰ Inscription avant : {t['inscription_avant']}"
             f"{inscr_section}"
             f"👉 <a href=\"{URL}\">Voir le tableau</a>\n\n"
-            f"<i>Pour suivre : /track {t['nom'].split()[-1] if t['nom'].split() else t['club']}</i>"
+            f"<i>Pour suivre : /track {t['club']}</i>"
         )
 
         msg_id = send_telegram(msg)

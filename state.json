@@ -1,6 +1,5 @@
 {
   "known": [
-    "TOURNOI ACSA 10-12 ANS|13-06-2026|ACSA",
     "TOURNOI TCR GRADE 4|14-02-2026|TCR",
     "TOURNOI OCBS GRADE 3-4 (annulé)|18-04-2026|OCBS",
     "TOURNOI USATT GRADE 4|09-05-2026|USATT",
@@ -9,7 +8,6 @@
     "TOURNOI DOUBLE ASAS GRADE 2|06-06-2026|ASAS",
     "TOURNOI RTCMA GRADE 1,2 et 3|06-06-2026|RTCMA",
     "TOURNOI ASAS GRADE 2|06-06-2026|ASAS",
-    "TOURNOI ASTT GRADE 4|13-06-2026|AST TAZA",
     "TOURNOI RTCMA +35 & +45 ANS|06-06-2026|RTCMA",
     "TOURNOI RTCMO GRADE 1,2 & 3|16-05-2026|RTCMO",
     "TOURNOI SM GRADE 2|30-05-2026|SM",
@@ -44,8 +42,6 @@
     "TOURNOI RTCA GRADE 2 (Reporté)|01-05-2026|RTCA",
     "TOURNOI DOUBLE TCF GRADE 3|28-03-2026|TCF",
     "TOURNOI COC GRADE 2-3|28-03-2026|COC",
-    "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
-    "TOURNOI RTCF GRADE 3|20-06-2026|RTCF",
     "TOURNOI ATC GRADE 4|01-05-2026|ATC",
     "TOURNOI STCO GRADE 3|26-06-2026|STCO",
     "TOURNOI ACSA GRADE 1,2,3|18-04-2026|ACSA",
@@ -113,27 +109,5 @@
       "inscription_avant": "08-06-2026"
     }
   },
-  "tracked": {
-    "TOURNOI STCO GRADE 3|26-06-2026|STCO": {
-      "nom": "TOURNOI STCO GRADE 3",
-      "ville": "OUJDA",
-      "club": "STCO",
-      "debut": "26-06-2026",
-      "fin": "28-06-2026",
-      "inscription_avant": "21-06-2026",
-      "last_inscriptions": "  • GRADE 3 : Simple Messieurs de 161 à NC : 4 inscrits (champ limité à 64 joueurs)",
-      "convocation_notified": false,
-      "message_id": 775
-    },
-    "TOURNOI ACSA 10-12 ANS|13-06-2026|ACSA": {
-      "nom": "TOURNOI ACSA 10-12 ANS",
-      "ville": "",
-      "club": "ACSA",
-      "debut": "13-06-2026",
-      "fin": "20-06-2026",
-      "inscription_avant": "12-06-2026",
-      "last_inscriptions": "  • 10 ans : Garçons : 34 inscrits (champ limité à 40 joueurs)\n  • 10 ans : Filles : 20 inscrites (champ limité à 24 joueuses)\n  • 11 ANS : 11 ans Garçons : 29 inscrits (champ limité à 40 joueurs)\n  • 11 ANS : 11 ans Filles : 24 inscrites (champ limité à 24 joueuses)\n  • 12 ANS : 12 ans Garçons : 40 inscrits (champ limité à 40 joueurs)\n  • 12 ANS : 12 ans Filles : 15 inscrites (champ limité à 24 joueuses)",
-      "convocation_notified": false
-    }
-  }
+  "tracked": {}
 }

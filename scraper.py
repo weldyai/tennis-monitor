@@ -74,34 +74,6 @@ def send_telegram(message: str, reply_markup: dict | None = None) -> int:
     return data["result"]["message_id"]
 
 
-def edit_message_reply_markup(message_id: int, reply_markup: dict | None = None):
-    _tg("editMessageReplyMarkup",
-        chat_id=CHAT_ID,
-        message_id=message_id,
-        reply_markup=reply_markup or {})
-
-
-def answer_callback(callback_query_id: str, text: str = ""):
-    _tg("answerCallbackQuery", callback_query_id=callback_query_id, text=text)
-
-
-def poll_updates(offset: int) -> list[dict]:
-    try:
-        data = _tg("getUpdates", offset=offset, timeout=0,
-                   allowed_updates=["message", "channel_post", "callback_query"])
-        updates = data.get("result", [])
-        print(f"getUpdates(offset={offset}): {len(updates)} update(s)")
-        for u in updates:
-            cb = u.get("callback_query")
-            msg = u.get("message") or u.get("channel_post")
-            text = msg.get("text","") if msg else (cb.get("data","") if cb else "?")
-            print(f"  #{u['update_id']} {text[:50]}")
-        return updates
-    except RuntimeError as e:
-        if "Conflict" in str(e):
-            print("getUpdates conflict — ignoré ce run.")
-            return []
-        raise
 
 
 # ─── State ───────────────────────────────────────────────────────────────────
@@ -308,102 +280,48 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
 
 # ─── Tracking logic ──────────────────────────────────────────────────────────
 
-def process_callbacks(state: dict) -> bool:
+def track_tournament(state: dict, sid: str) -> str:
     """
-    Poll Telegram : boutons inline (track:/pass:) + commande /untrack.
-    Avance toujours l'offset pour ne pas retraiter les mêmes updates.
-    Returns True si state modifié (offset avancé ou tracked changé).
+    Ajoute un tournoi au tracking via son short_id.
+    Appelé par Claude directement (pas via getUpdates).
+    Retourne un message de confirmation.
     """
-    offset = state.get("telegram_offset", 0)
-    updates = poll_updates(offset)
-    if not updates:
-        return False
-
-    modified = False
     id_map = state.get("id_map", {})
     id_map_meta = state.get("id_map_meta", {})
+    key = id_map.get(sid)
+    meta = id_map_meta.get(sid)
+    if not key or not meta:
+        return f"❌ ID '{sid}' non trouvé."
+    if key in state.get("tracked", {}):
+        return f"✅ {meta['nom']} est déjà suivi."
+    state.setdefault("tracked", {})[key] = {
+        "nom": meta["nom"], "ville": meta.get("ville", ""),
+        "club": meta.get("club", ""), "debut": meta.get("debut", ""),
+        "fin": meta.get("fin", ""), "inscription_avant": meta.get("inscription_avant", ""),
+        "last_inscriptions": "", "convocation_notified": False,
+    }
+    print(f"Tracking activé: {key}")
+    return f"🔔 Tracking activé : {meta['nom']}"
 
-    for upd in updates:
-        new_offset = upd["update_id"] + 1
-        if new_offset > offset:
-            offset = new_offset
-            modified = True
 
-        msg = upd.get("message") or upd.get("channel_post")
-        cb = upd.get("callback_query")
-
-        # ── Boutons inline ────────────────────────────────────────────────
-        if cb:
-            try:
-                answer_callback(cb["id"])
-            except Exception:
-                pass
-            data = cb.get("data", "")
-
-            if data.startswith("track:"):
-                sid_cb = data[6:]
-                key = id_map.get(sid_cb)
-                meta = id_map_meta.get(sid_cb)
-                if key and meta:
-                    if key not in state.get("tracked", {}):
-                        state.setdefault("tracked", {})[key] = {
-                            "nom": meta["nom"], "ville": meta.get("ville", ""),
-                            "club": meta.get("club", ""), "debut": meta.get("debut", ""),
-                            "fin": meta.get("fin", ""), "inscription_avant": meta.get("inscription_avant", ""),
-                            "last_inscriptions": "", "convocation_notified": False,
-                        }
-                        print(f"Tracking activé (bouton): {key}")
-                        modified = True
-                    msg_id = meta.get("message_id")
-                    if msg_id:
-                        try:
-                            edit_message_reply_markup(msg_id, {"inline_keyboard": [[{"text": "✅ Suivi", "callback_data": "noop"}]]})
-                        except Exception:
-                            pass
-
-            elif data.startswith("pass:"):
-                sid_cb = data[5:]
-                meta = id_map_meta.get(sid_cb)
-                if meta:
-                    msg_id = meta.get("message_id")
-                    if msg_id:
-                        try:
-                            edit_message_reply_markup(msg_id, {})
-                        except Exception:
-                            pass
-            continue
-
-        # ── Commande /untrack ─────────────────────────────────────────────
-        if not msg:
-            continue
-        text = msg.get("text", "")
-        if not text.startswith("/untrack"):
-            continue
-
-        parts = text.split(None, 1)
-        query = parts[1].strip() if len(parts) > 1 else ""
-        match_key, match_meta = None, None
-        if query.lower() in id_map_meta:
-            match_key = id_map.get(query.lower())
-            match_meta = id_map_meta[query.lower()]
-        else:
-            for sid, meta in id_map_meta.items():
-                if query and query.upper() in meta.get("nom", "").upper():
-                    match_key = id_map.get(sid)
-                    match_meta = meta
-                    break
-
-        if not query:
-            send_telegram("Usage: /untrack <id>")
-        elif match_key and match_key in state.get("tracked", {}):
-            del state["tracked"][match_key]
-            send_telegram(f"🔕 Tracking désactivé : {match_meta['nom']}")
-            modified = True
-        else:
-            send_telegram(f"❌ '{query}' non trouvé dans les tournois suivis.")
-
-    state["telegram_offset"] = offset
-    return modified
+def untrack_tournament(state: dict, query: str) -> str:
+    """Désactive le tracking via short_id ou nom partiel."""
+    id_map = state.get("id_map", {})
+    id_map_meta = state.get("id_map_meta", {})
+    match_key, match_meta = None, None
+    if query.lower() in id_map_meta:
+        match_key = id_map.get(query.lower())
+        match_meta = id_map_meta[query.lower()]
+    else:
+        for sid, meta in id_map_meta.items():
+            if query.upper() in meta.get("nom", "").upper():
+                match_key = id_map.get(sid)
+                match_meta = meta
+                break
+    if match_key and match_key in state.get("tracked", {}):
+        del state["tracked"][match_key]
+        return f"🔕 Tracking désactivé : {match_meta['nom']}"
+    return f"❌ '{query}' non trouvé dans les tournois suivis."
 
 
 def check_tracked_tournaments(state: dict) -> bool:
@@ -479,12 +397,7 @@ def main():
 
     state = load_state()
 
-    # 1. Traiter les callbacks Telegram — sauvegarder immédiatement
-    cb_modified = process_callbacks(state)
-    if cb_modified:
-        save_state(state)
-
-    # 2. Récupérer la liste des tournois
+    # 1. Récupérer la liste des tournois
     tournaments = fetch_tournament_list()
 
     if tournaments is None:
@@ -527,15 +440,11 @@ def main():
             f"📅 Du {t['debut']} au {t['fin']}\n"
             f"⏰ Inscription avant : {t['inscription_avant']}"
             f"{inscr_section}"
-            f"👉 <a href=\"{URL}\">Voir le tableau</a>"
+            f"👉 <a href=\"{URL}\">Voir le tableau</a>\n"
+        f"<code>id:{sid}</code>"
         )
 
-        reply_markup = {"inline_keyboard": [[
-            {"text": "🔔 Suivre", "callback_data": f"track:{sid}"},
-            {"text": "⏭ Passer", "callback_data": f"pass:{sid}"},
-        ]]}
-
-        msg_id = send_telegram(msg, reply_markup=reply_markup)
+        msg_id = send_telegram(msg)
         print(f"Notifié : {t['nom']} (msg_id={msg_id})")
 
         # Stocker le mapping sid → key + meta (avec message_id pour édition)

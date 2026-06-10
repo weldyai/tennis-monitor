@@ -175,7 +175,7 @@ def _check_convocation(ajax_bodies: list[str]) -> bool:
         if "ultérieurement" in body or "ulterieurement" in body.lower():
             return False
         # Convocation disponible = lien PDF ou contenu spécifique
-        if re.search(r'convoc.*\.pdf|télécharger.*convoc|Convocation.*disponible', body, re.I):
+        if re.search(r'convoc.*\.pdf|télécharger.*convoc|Convocation.*disponible|\.pdf', body, re.I):
             return True
     return False
 

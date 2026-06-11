@@ -200,6 +200,16 @@
       "inscription_avant": "08-06-2026",
       "last_inscriptions": "  • 10 ans : Garçons : 34 inscrits (champ limité à 40 joueurs)\n  • 10 ans : Filles : 20 inscrites (champ limité à 24 joueuses)\n  • 11 ANS : 11 ans Garçons : 30 inscrits (champ limité à 40 joueurs)\n  • 11 ANS : 11 ans Filles : 24 inscrites (champ limité à 24 joueuses)\n  • 12 ANS : 12 ans Garçons : 40 inscrits (champ limité à 40 joueurs)\n  • 12 ANS : 12 ans Filles : 15 inscrites (champ limité à 24 joueuses)",
       "convocation_notified": true
+    },
+    "NATIONAL DES JEUNES 11,12 ANS|29-06-2026|FRMT": {
+      "nom": "NATIONAL DES JEUNES 11,12 ANS",
+      "ville": "RABAT",
+      "club": "FRMT",
+      "debut": "29-06-2026",
+      "fin": "05-07-2026",
+      "inscription_avant": "15-06-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
   "telegram_offset": 478509620

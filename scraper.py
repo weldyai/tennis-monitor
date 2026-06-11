@@ -387,6 +387,7 @@ def check_tracked_tournaments(state: dict) -> bool:
             tabs.append("Convocations")
 
         detail = fetch_detail(nom, tabs)
+        print(f"  detail keys: {list(detail.keys())}, inscriptions={detail.get('inscriptions','')!r}")
 
         # Inscriptions diff
         new_inscr = detail.get("inscriptions", "")

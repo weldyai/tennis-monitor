@@ -117,7 +117,7 @@ def _parse_tournaments_raw(raw_text: str) -> list[dict]:
     from html import unescape
     decoded = _decode_hex(raw_text)
     pattern = re.compile(
-        r"<COLONNE>([^<]*(?:TOURNOI|NATIONAL)[^<]{0,150})</COLONNE>"
+        r"<COLONNE>([^<]{1,150})</COLONNE>"
         r"<COLONNE>([^<]*)</COLONNE>"
         r"(?:<COLONNE[^/]*/?>)*"
         r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"

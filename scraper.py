@@ -232,14 +232,21 @@ def fetch_tournament_list() -> list[dict] | None:
             page.mouse.wheel(0, -500)
             page.wait_for_timeout(300)
         page.wait_for_timeout(2000)
-        for _ in range(40):
+        for _ in range(60):
             page.mouse.wheel(0, -500)
             page.wait_for_timeout(150)
         page.wait_for_timeout(2000)
         for _ in range(10):
             page.mouse.wheel(0, 500)
             page.wait_for_timeout(150)
-        for _ in range(40):
+        for _ in range(60):
+            page.mouse.wheel(0, -500)
+            page.wait_for_timeout(150)
+        page.wait_for_timeout(2000)
+        for _ in range(10):
+            page.mouse.wheel(0, 500)
+            page.wait_for_timeout(150)
+        for _ in range(60):
             page.mouse.wheel(0, -500)
             page.wait_for_timeout(150)
         page.wait_for_timeout(3000)

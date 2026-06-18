@@ -294,8 +294,7 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
         page.mouse.move(640, 200)
 
         # Scroll complet pour charger tous les éléments dans le DOM
-        ajax_detail: list[str] = []
-        _scroll_all_until_stable(page, ajax_detail)
+        _scroll_all_until_stable(page, ajax_all)
 
         # Trouver l'élément et le rendre visible
         target = page.get_by_text(nom, exact=False).first

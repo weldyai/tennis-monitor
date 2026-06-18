@@ -232,24 +232,25 @@ def fetch_tournament_list() -> list[dict] | None:
             page.mouse.wheel(0, -500)
             page.wait_for_timeout(300)
         page.wait_for_timeout(2000)
-        for _ in range(60):
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(150)
-        page.wait_for_timeout(2000)
+
+        # Scroll jusqu'à stabilisation du count (max 10 rounds)
+        prev_count = 0
+        stable_rounds = 0
         for _ in range(10):
-            page.mouse.wheel(0, 500)
-            page.wait_for_timeout(150)
-        for _ in range(60):
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(150)
+            for _ in range(30):
+                page.mouse.wheel(0, -500)
+                page.wait_for_timeout(150)
+            page.wait_for_timeout(2000)
+            current_count = len(_parse_tournaments_raw("\n".join(ajax_all)))
+            if current_count == prev_count:
+                stable_rounds += 1
+                if stable_rounds >= 2:
+                    break
+            else:
+                stable_rounds = 0
+                prev_count = current_count
+
         page.wait_for_timeout(2000)
-        for _ in range(10):
-            page.mouse.wheel(0, 500)
-            page.wait_for_timeout(150)
-        for _ in range(60):
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(150)
-        page.wait_for_timeout(3000)
         html = page.content()
         with open("debug_page.html", "w", encoding="utf-8") as f:
             f.write(html)
@@ -274,13 +275,23 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
             return results
         page.wait_for_timeout(5000)
         page.mouse.move(640, 200)
-        for _ in range(15):
+        for _ in range(5):
             page.mouse.wheel(0, -500)
-            page.wait_for_timeout(150)
+            page.wait_for_timeout(300)
         page.wait_for_timeout(2000)
 
         target = page.get_by_text(nom, exact=False).first
-        target.click(timeout=5000)
+        # Scroll jusqu'à ce que l'élément soit visible (max 120 itérations)
+        for _ in range(120):
+            try:
+                if target.is_visible():
+                    break
+            except Exception:
+                pass
+            page.mouse.wheel(0, -500)
+            page.wait_for_timeout(150)
+        page.wait_for_timeout(1000)
+        target.click(timeout=10000)
         page.wait_for_timeout(1500)
 
         for tab_label in tabs:

@@ -289,7 +289,7 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
     tabs: list of tab labels to click, e.g. ["Inscriptions", "Convocations"]
     Returns dict: tab_label -> parsed result
     """
-    pw, browser, page, _, ajax_current, set_collecting = _make_browser_session()
+    pw, browser, page, ajax_all, ajax_current, set_collecting = _make_browser_session()
     results: dict[str, str | bool] = {}
     try:
         resp = page.goto(URL, wait_until="domcontentloaded", timeout=30000)

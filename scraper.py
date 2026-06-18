@@ -182,6 +182,44 @@ def _check_convocation(ajax_bodies: list[str]) -> bool:
 
 # ─── Scraping ────────────────────────────────────────────────────────────────
 
+def _scroll_all_until_stable(page, ajax_all: list[str], max_rounds: int = 20, stable_needed: int = 3) -> int:
+    """Scroll window + inner containers until tournament count stabilizes. Returns final count."""
+    _JS_SCROLL = """
+        () => {
+            window.scrollTo(0, document.body.scrollHeight);
+            Array.from(document.querySelectorAll('*'))
+                .filter(el => {
+                    const s = getComputedStyle(el);
+                    return el.scrollHeight > el.clientHeight + 50 &&
+                           (s.overflow === 'auto' || s.overflow === 'scroll' ||
+                            s.overflowY === 'auto' || s.overflowY === 'scroll');
+                })
+                .forEach(el => { el.scrollTop = el.scrollHeight; });
+        }
+    """
+    prev_count = 0
+    stable_rounds = 0
+    for round_num in range(max_rounds):
+        for _ in range(30):
+            page.mouse.wheel(0, -500)
+            page.wait_for_timeout(100)
+        try:
+            page.evaluate(_JS_SCROLL)
+        except Exception:
+            pass
+        page.wait_for_timeout(3000)
+        current_count = len(_parse_tournaments_raw("\n".join(ajax_all)))
+        print(f"  scroll round {round_num + 1}: {current_count} tournois")
+        if current_count == prev_count:
+            stable_rounds += 1
+            if stable_rounds >= stable_needed:
+                break
+        else:
+            stable_rounds = 0
+            prev_count = current_count
+    return prev_count
+
+
 def _make_browser_session():
     """Returns (playwright, browser, page, ajax_all, ajax_current, set_target)."""
     from playwright.sync_api import sync_playwright
@@ -228,28 +266,7 @@ def fetch_tournament_list() -> list[dict] | None:
             return None
         page.wait_for_timeout(6000)
         page.mouse.move(640, 200)
-        for _ in range(5):
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(300)
-        page.wait_for_timeout(2000)
-
-        # Scroll jusqu'à stabilisation du count (max 10 rounds)
-        prev_count = 0
-        stable_rounds = 0
-        for _ in range(10):
-            for _ in range(30):
-                page.mouse.wheel(0, -500)
-                page.wait_for_timeout(150)
-            page.wait_for_timeout(2000)
-            current_count = len(_parse_tournaments_raw("\n".join(ajax_all)))
-            if current_count == prev_count:
-                stable_rounds += 1
-                if stable_rounds >= 2:
-                    break
-            else:
-                stable_rounds = 0
-                prev_count = current_count
-
+        _scroll_all_until_stable(page, ajax_all)
         page.wait_for_timeout(2000)
         html = page.content()
         with open("debug_page.html", "w", encoding="utf-8") as f:
@@ -275,21 +292,18 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
             return results
         page.wait_for_timeout(5000)
         page.mouse.move(640, 200)
-        for _ in range(5):
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(300)
-        page.wait_for_timeout(2000)
 
+        # Scroll complet pour charger tous les éléments dans le DOM
+        ajax_detail: list[str] = []
+        _scroll_all_until_stable(page, ajax_detail)
+
+        # Trouver l'élément et le rendre visible
         target = page.get_by_text(nom, exact=False).first
-        # Scroll jusqu'à ce que l'élément soit visible (max 120 itérations)
-        for _ in range(120):
-            try:
-                if target.is_visible():
-                    break
-            except Exception:
-                pass
-            page.mouse.wheel(0, -500)
-            page.wait_for_timeout(150)
+        try:
+            target.scroll_into_view_if_needed(timeout=8000)
+        except Exception:
+            print(f"  fetch_detail({nom}): non trouvé après scroll complet")
+            return results
         page.wait_for_timeout(1000)
         target.click(timeout=10000)
         page.wait_for_timeout(1500)

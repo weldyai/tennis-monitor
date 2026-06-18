@@ -51,6 +51,11 @@ def is_open(t: dict) -> bool:
     return d is not None and d >= date.today()
 
 
+def _is_finished(t: dict) -> bool:
+    d = parse_date(t.get("fin", ""))
+    return d is not None and d < date.today()
+
+
 # ─── Telegram API ────────────────────────────────────────────────────────────
 
 def _tg(method: str, **kwargs) -> dict:
@@ -490,10 +495,12 @@ def main():
 
     known = set(state.get("known", []))
     new_ones = [t for t in tournaments if make_key(t) not in known]
-    new_ones.sort(key=lambda t: 0 if is_open(t) else 1)
+    # Ne notifier que les tournois pas encore terminés
+    to_notify = [t for t in new_ones if not _is_finished(t)]
+    to_notify.sort(key=lambda t: 0 if is_open(t) else 1)
 
     # 3. Notifier les nouveaux tournois avec boutons Suivre/Passer
-    for t in new_ones:
+    for t in to_notify:
         key = make_key(t)
         sid = short_id(key)
         voyant = "🟢" if is_open(t) else "🔴"
@@ -538,7 +545,7 @@ def main():
     track_modified = check_tracked_tournaments(state)
 
     save_state(state)
-    print(f"{len(tournaments)} tournois, {len(new_ones)} nouveau(x).")
+    print(f"{len(tournaments)} tournois, {len(to_notify)} notifié(s) ({len(new_ones) - len(to_notify)} terminés ignorés).")
 
 
 if __name__ == "__main__":

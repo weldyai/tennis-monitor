@@ -298,18 +298,26 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
         page.wait_for_timeout(5000)
         page.mouse.move(640, 200)
 
-        # Scroll complet pour charger tous les éléments dans le DOM
-        _scroll_all_until_stable(page, ajax_all)
+        # Scroll incrémental : le virtual scroll WebDev ne rend dans le DOM
+        # que les éléments visibles — on scroll par petits pas et on vérifie
+        # après chaque pas si l'élément apparaît dans le DOM.
+        target = page.get_by_text(nom, exact=False)
+        found = False
+        for _ in range(400):
+            if target.count() > 0:
+                try:
+                    target.first.scroll_into_view_if_needed(timeout=3000)
+                    target.first.click(timeout=5000)
+                    found = True
+                    break
+                except Exception:
+                    pass
+            page.mouse.wheel(0, 300)
+            page.wait_for_timeout(200)
 
-        # Trouver l'élément et le rendre visible
-        target = page.get_by_text(nom, exact=False).first
-        try:
-            target.scroll_into_view_if_needed(timeout=8000)
-        except Exception:
+        if not found:
             print(f"  fetch_detail({nom}): non trouvé après scroll complet")
             return results
-        page.wait_for_timeout(1000)
-        target.click(timeout=10000)
         page.wait_for_timeout(1500)
 
         for tab_label in tabs:

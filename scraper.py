@@ -79,6 +79,26 @@ def send_telegram(message: str, reply_markup: dict | None = None) -> int:
     return data["result"]["message_id"]
 
 
+def send_alert_throttled(state: dict, key: str, message: str, cooldown_hours: int = 24) -> bool:
+    """Envoie une alerte Telegram au plus une fois par `cooldown_hours` pour une clé donnée."""
+    alerts = state.setdefault("alerts", {})
+    now = datetime.now(timezone.utc)
+    last = alerts.get(key)
+    if last:
+        try:
+            if (now - datetime.fromisoformat(last)).total_seconds() < cooldown_hours * 3600:
+                return False
+        except Exception:
+            pass
+    try:
+        send_telegram(message)
+    except Exception as e:
+        print(f"  alerte '{key}' non envoyée: {e}")
+        return False
+    alerts[key] = now.isoformat()
+    return True
+
+
 def edit_message_reply_markup(message_id: int, reply_markup: dict | None = None):
     _tg("editMessageReplyMarkup", chat_id=CHAT_ID, message_id=message_id,
         reply_markup=reply_markup or {})
@@ -480,8 +500,6 @@ def check_tracked_tournaments(state: dict) -> bool:
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 def main():
-    import time
-
     state = load_state()
 
     # 1. Traiter les callbacks Telegram (boutons Suivre/Passer)
@@ -491,6 +509,22 @@ def main():
 
     if "--callbacks-only" in sys.argv:
         return
+
+    try:
+        _run_scrape(state, cb_modified)
+    except Exception:
+        import traceback
+        send_alert_throttled(
+            state, "crash",
+            f"🚨 <b>Tennis Monitor en panne</b>\n\n<code>{traceback.format_exc()[-1500:]}</code>",
+            cooldown_hours=2,
+        )
+        save_state(state)
+        raise
+
+
+def _run_scrape(state: dict, cb_modified: bool):
+    import time
 
     # 2. Récupérer la liste des tournois
     tournaments = fetch_tournament_list()
@@ -510,11 +544,48 @@ def main():
                 save_state(state)
             sys.exit(0)
 
+    # Auto-diagnostic : chute anormale du nombre de tournois vs historique récent
+    count_history = state.setdefault("count_history", [])
+    if len(count_history) >= 5:
+        avg = sum(count_history) / len(count_history)
+        if avg > 0 and len(tournaments) < avg * 0.6:
+            send_alert_throttled(
+                state, "count_drop",
+                f"⚠️ <b>Anomalie scraping</b>\n\n{len(tournaments)} tournois vus contre "
+                f"{avg:.0f} en moyenne récemment. Le scraper rate peut-être des tournois "
+                f"(site changé, scroll cassé...).",
+                cooldown_hours=12,
+            )
+    count_history.append(len(tournaments))
+    state["count_history"] = count_history[-20:]
+
     known = set(state.get("known", []))
     new_ones = [t for t in tournaments if make_key(t) not in known]
     # Ne notifier que les tournois pas encore terminés
     to_notify = [t for t in new_ones if not _is_finished(t)]
     to_notify.sort(key=lambda t: 0 if is_open(t) else 1)
+
+    # Auto-diagnostic : aucun nouveau tournoi détecté depuis trop longtemps —
+    # aurait dû alerter dès le début du bug de dédup par nom seul (fix du 2026-08-13).
+    if new_ones:
+        state["last_new_tournament_at"] = datetime.now(timezone.utc).isoformat()
+    else:
+        last_new = state.get("last_new_tournament_at")
+        if last_new is None:
+            state["last_new_tournament_at"] = datetime.now(timezone.utc).isoformat()
+        else:
+            try:
+                days = (datetime.now(timezone.utc) - datetime.fromisoformat(last_new)).days
+            except Exception:
+                days = 0
+            if days >= 15:
+                send_alert_throttled(
+                    state, "stagnation",
+                    f"⚠️ <b>Aucun nouveau tournoi détecté depuis {days} jours</b>\n\n"
+                    f"Soit c'est un creux normal de saison, soit le scraper rate des "
+                    f"tournois — vérifier le parsing.",
+                    cooldown_hours=48,
+                )
 
     # 3. Notifier les nouveaux tournois avec boutons Suivre/Passer
     for t in to_notify:
@@ -560,6 +631,17 @@ def main():
 
     # 4. Vérifier les tournois trackés (inscriptions + convocations)
     track_modified = check_tracked_tournaments(state)
+
+    # Auto-diagnostic : rien n'est suivi alors que des tournois sont ouverts —
+    # on ne rate pas un nouveau tournoi, mais on peut rater son suivi si personne
+    # ne clique jamais 🔔 Suivre.
+    if not state.get("tracked") and any(is_open(t) and not _is_finished(t) for t in tournaments):
+        send_alert_throttled(
+            state, "tracked_empty",
+            "ℹ️ <b>Aucun tournoi suivi</b> alors que des tournois sont ouverts.\n"
+            "Clique 🔔 Suivre sur un message pour être notifié des inscriptions/convocation.",
+            cooldown_hours=24,
+        )
 
     save_state(state)
     print(f"{len(tournaments)} tournois, {len(to_notify)} notifié(s) ({len(new_ones) - len(to_notify)} terminés ignorés).")

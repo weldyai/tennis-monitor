@@ -489,6 +489,9 @@ def main():
     if cb_modified:
         save_state(state)
 
+    if "--callbacks-only" in sys.argv:
+        return
+
     # 2. Récupérer la liste des tournois
     tournaments = fetch_tournament_list()
 

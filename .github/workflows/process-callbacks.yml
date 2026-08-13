@@ -1,0 +1,44 @@
+name: Process Telegram Callbacks
+
+on:
+  schedule:
+    - cron: "*/2 * * * *"   # toutes les 2 minutes
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-state
+  cancel-in-progress: false
+
+jobs:
+  callbacks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Process callbacks
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -u scraper.py --callbacks-only
+
+      - name: Commit updated state
+        run: |
+          git config user.name "tennis-monitor"
+          git config user.email "bot@tennis-monitor"
+          git add state.json
+          git diff --staged --quiet || git commit -m "chore: callbacks $(date -u +%Y-%m-%dT%H:%M)"
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && break
+            echo "push conflict, retry $i..."
+            sleep $((RANDOM % 10 + 1))
+          done

@@ -134,13 +134,19 @@ def _parse_tournaments_raw(raw_text: str) -> list[dict]:
     tournaments, seen = [], set()
     for m in pattern.finditer(decoded):
         nom = unescape(m.group(1).strip())
-        if nom in seen:
+        club = unescape(m.group(2).strip())
+        debut = m.group(3)
+        # Dédup par (nom, début, club) : un même nom de tournoi revient
+        # chaque année avec une nouvelle édition (date différente) — dédupliquer
+        # par nom seul écraserait silencieusement les nouvelles éditions.
+        dedup_key = (nom, debut, club)
+        if dedup_key in seen:
             continue
-        seen.add(nom)
+        seen.add(dedup_key)
         tournaments.append({
             "nom": nom,
-            "club": unescape(m.group(2).strip()),
-            "debut": m.group(3),
+            "club": club,
+            "debut": debut,
             "fin": m.group(4),
             "ville": unescape(m.group(5).strip()),
             "inscription_avant": m.group(6),

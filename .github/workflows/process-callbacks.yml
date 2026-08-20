@@ -2,7 +2,7 @@ name: Process Telegram Callbacks
 
 on:
   schedule:
-    - cron: "*/2 * * * *"   # toutes les 2 minutes
+    - cron: "*/5 * * * *"   # toutes les 5 minutes (GitHub ne fiabilise pas en dessous)
   workflow_dispatch:
 
 permissions:

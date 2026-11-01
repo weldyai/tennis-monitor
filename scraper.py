@@ -200,13 +200,22 @@ def _parse_inscriptions(ajax_bodies: list[str]) -> str:
     return ""
 
 
+_CONVOC_PENDING = re.compile(r"ult[ée]rieurement", re.I)
+_CONVOC_PUBLISHED = re.compile(
+    r"convoc[^<]{0,200}\.pdf|\.pdf[^<]{0,200}convoc"
+    r"|t[ée]l[ée]charger[^<]{0,100}convoc|convocation[^<]{0,100}disponible",
+    re.I,
+)
+
+
 def _check_convocation(ajax_bodies: list[str]) -> bool:
-    """Returns True if convocation is published (no longer pending)."""
+    """True si la convocation est publiée. Un PDF seul (règlement, etc.) ne suffit pas :
+    il doit être associé au mot « convoc ». Un body « ultérieurement » est ignoré
+    sans masquer un body publié qui le suivrait."""
     for body in ajax_bodies:
-        if "ultérieurement" in body or "ulterieurement" in body.lower():
-            return False
-        # Convocation disponible = lien PDF ou contenu spécifique
-        if re.search(r'convoc.*\.pdf|télécharger.*convoc|Convocation.*disponible|\.pdf', body, re.I):
+        if _CONVOC_PENDING.search(body):
+            continue
+        if _CONVOC_PUBLISHED.search(body):
             return True
     return False
 
@@ -343,12 +352,14 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
 
         if not found:
             print(f"  fetch_detail({nom}): non trouvé après scroll complet")
+            results["_missing"] = "tournoi"
             return results
         page.wait_for_timeout(1500)
 
         for tab_label in tabs:
             tab = page.query_selector(f'text={tab_label}')
             if not tab:
+                results["_missing"] = (str(results.get("_missing", "")) + f" {tab_label}").strip()
                 continue
             set_collecting(True)
             tab.click()
@@ -458,6 +469,16 @@ def check_tracked_tournaments(state: dict) -> bool:
 
         detail = fetch_detail(nom, tabs)
 
+        # Auto-diagnostic : libellé d'onglet / tournoi introuvable (UI changée)
+        if detail.get("_missing"):
+            send_alert_throttled(
+                state, f"detail_missing:{short_id(key)}",
+                f"⚠️ <b>Suivi cassé</b>\n\n<b>{nom}</b> : élément introuvable "
+                f"({detail['_missing']}). Le site a peut-être changé de libellés.",
+                cooldown_hours=24,
+            )
+            modified = True
+
         # Inscriptions diff
         new_inscr = detail.get("inscriptions", "")
         if new_inscr and new_inscr != info.get("last_inscriptions", ""):
@@ -539,10 +560,20 @@ def _run_scrape(state: dict, cb_modified: bool):
         print(f"Seulement {len(tournaments)} tournois — retry dans 10s...")
         time.sleep(10)
         tournaments = fetch_tournament_list()
-        if not tournaments:
+        if tournaments is None:
+            print("Site indisponible au retry — état non modifié.")
             if cb_modified:
                 save_state(state)
             sys.exit(0)
+        if not tournaments:
+            send_alert_throttled(
+                state, "parse_empty",
+                "🚨 <b>Aucun tournoi parsé</b>\n\nLe site répond mais le parsing renvoie 0 "
+                "résultat après retry (structure <code>&lt;COLONNE&gt;</code> changée ?).",
+                cooldown_hours=6,
+            )
+            save_state(state)
+            sys.exit(1)
 
     # Auto-diagnostic : chute anormale du nombre de tournois vs historique récent
     count_history = state.setdefault("count_history", [])

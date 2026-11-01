@@ -134,7 +134,7 @@
     "TOURNOI DOUBLE ASAS GRADE 2|06-06-2026|ASAS",
     "TOURNOI DOUBLE COBM GRADE 4|15-11-2025|COBM"
   ],
-  "updated_at": "2026-11-01T14:54:43.659480+00:00",
+  "updated_at": "2026-11-01T14:56:50.106097+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -878,8 +878,19 @@
       "message_id": 177
     }
   },
-  "tracked": {},
-  "telegram_offset": 478509655,
+  "tracked": {
+    "TOURNOI TCR GRADE 3|31-10-2026|TCR": {
+      "nom": "TOURNOI TCR GRADE 3",
+      "ville": "TAROUDANT",
+      "club": "TCR",
+      "debut": "31-10-2026",
+      "fin": "08-11-2026",
+      "inscription_avant": "26-10-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
+    }
+  },
+  "telegram_offset": 478509663,
   "count_history": [
     11,
     11,

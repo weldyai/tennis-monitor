@@ -1,6 +1,6 @@
 # Reprise — Tennis Monitor
 ## État
-En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min, derniers runs OK (01/11). 120 tournois connus, 1 suivi. Dernier changement : 01/11, PR #1 (durcissement scraper) et #2 (tests dédup) mergées.
+En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min, derniers runs OK (01/11). 133 clés connues, 11 tournois listés, 0 suivi (alerte tracked_empty du 31/10). Dernier changement : 01/11, PR #1 (durcissement scraper) et #2 (tests dédup) mergées.
 
 ## Repères
 - Vérifier la santé : `gh run list --repo weldyai/tennis-monitor --workflow=monitor.yml --limit=5` (ou `/check`).

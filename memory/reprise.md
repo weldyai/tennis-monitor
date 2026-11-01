@@ -19,7 +19,12 @@ En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monito
 - PR #6 : `_check_convocation` (PDF hors règlement dans l'onglet Convocations = publié), parsing tolérant + alerte `parse_gap`, alerte `cron_lag`, alertes avec cause + correction, concurrency partagée monitor/callbacks, crons hors :00/:30. 35 tests verts, run CI vert.
 - Test final : clic « Suivre » traité après déclenchement manuel de `process-callbacks.yml`.
 
+## Fait le 01/11 (déclencheur externe)
+- cron-job.org en place (token GitHub fine-grained, repo tennis-monitor, Actions read/write, expire le 31/10/2027) : job « tennis callbacks » toutes les 5 min, job « tennis monitor » à :00 et :30, tous deux en `workflow_dispatch` sur `main`.
+- Cadence vérifiée (`gh run list`, 21:45 à 22:40 UTC) : callbacks toutes les 5 min, monitor toutes les 30 min, tous en succès. Un seul run callbacks annulé (20:00, concurrence partagée avec le monitor), effet connu et acceptable.
+- Crons GitHub (`11,41` et `3-58/5`) conservés comme filet de secours.
+
 ## Prochaine action
-- Déclencheur externe cron-job.org → `workflow_dispatch` (callbacks 5 min, monitor 11,41) : Brahim crée un token GitHub fine-grained (repo tennis-monitor, Actions read/write) ; login Google bloqué dans l'onglet piloté, à faire dans son Chrome. Puis vérifier avec `gh run list` des runs `workflow_dispatch` à cadence.
-- Convocation non validable en réel tant qu'aucune n'est publiée ; `detail_missing` à surveiller.
-- Retirer `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` de `monitor.yml` (via PR). Clore le goal quand le déclencheur externe est vérifié.
+- Convocation non validable en réel tant qu'aucune n'est publiée (TCR GRADE 3 suivi) ; `detail_missing` et `cron_lag` à surveiller.
+- Renouveler le token GitHub avant le 31/10/2027 (cron-job.org, en-tête Authorization).
+- Optionnel : décaler le job monitor à :02/:32 si les annulations callbacks deviennent fréquentes ; retirer `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` de `monitor.yml` (via PR).

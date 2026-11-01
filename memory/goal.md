@@ -1,6 +1,6 @@
 # Goal actif — remettre à plat Tennis Monitor (tournois ratés, bouton Suivi, notif convocation)
 
-**Statut** : en cours — itération 2, PR #6 mergée, test Suivre OK ; reste le déclencheur externe (2026-11-01), branche claude/fix-suivi
+**Statut** : atteint (01/11/2026) — critères 1 à 6 verts ; convocation réelle à valider à la prochaine publication
 
 ## Objectif
 Tennis Monitor détecte tous les tournois, le bouton « Suivre » Telegram enregistre bien le suivi, et la notification de convocation part quand elle est publiée.
@@ -28,3 +28,4 @@ pytest + simulation locale + `gh run view` (logs réels) ; `code-review` sur le 
 Pistes : déclencheur externe (cron-job.org -> workflow_dispatch) + minutes décalées ; concurrency sur monitor.yml ; vérifier la liste des tournois vs site réel ; étendre l'autodiagnostic.
 2. Site réel = 11 tournois (parsing 11/11, 0 ligne ignorée) -> « tournois ratés » = détection retardée par les crons, pas de perte de parsing. Correctifs (PR claude/fix-suivi) : crons hors :00/:30 + concurrency monitor.yml ; _check_convocation : un PDF (hors règlement) dans l'onglet Convocations vaut publication (la PR #1 avait trop resserré) ; parsing tolérant (inscription_avant optionnel) + alerte parse_gap ; alerte cron_lag ; alertes avec cause + correction. 35 tests verts (clic Suivre, convocation notifiée 1 seule fois, lag). Step DIAG retiré.
 Écart restant : merge PR, run CI réel vert, déclencheur externe (cron-job.org, besoin d'un token GitHub de Brahim), test final clic Suivre.
+3. Test final OK (clic « Suivre » → TCR GRADE 3 suivi). Déclencheur externe cron-job.org en place, cadence 5/30 min vérifiée sur ~1 h, tous runs verts. Résultat : cause racine = retard des crons GitHub, corrigé par le déclenchement externe + durcissement du scraper (PR #6).

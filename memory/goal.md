@@ -1,6 +1,6 @@
 # Goal actif — valider tennis-monitor de bout en bout (hors test final iPhone)
 
-**Statut** : tests autonomes verts ; en attente du test final iPhone par Brahim
+**Statut** : atteint (2026-11-01) — test final iPhone OK (PR #3)
 
 ## Critère de fin
 Tous verts : (1) pytest sur main ; (2) nouveaux tests locaux de la logique PR #1 (_check_convocation, _run_scrape, alertes) ; (3) workflows YAML valides + simulation locale du retry de push sous course ; (4) parsing réel du site FRMT (lecture seule, sans Telegram) ; (5) un run CI réel vert après les merges ; (6) protocole sessions cloud simulé. Puis demander à Brahim le test final iPhone.

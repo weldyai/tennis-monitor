@@ -11,9 +11,10 @@ En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min,
 - **PR #1 durcissement `scraper.py`** : alerte `parse_empty` + `exit(1)` si 0 tournoi parsé (site indisponible au retry = `exit(0)`, pas d'alerte) ; alerte `detail_missing` si tournoi/onglet introuvable (24 h) ; `_check_convocation` resserré (PDF associé à « convoc », body « ultérieurement » ignoré sans masquer les suivants).
 - **PR #2 tests** : `tests/test_dedup.py` (4 tests, `pytest` dans `requirements.txt`) sur la déduplication (même nom + édition/club différent conservé, doublon exact retiré, ordre serveur préservé).
 - **`monitor.yml`** : commit du state avec `if: !cancelled()` + retry du push (5 essais).
+- **PR #4 (CI)** : `checkout`, `setup-python`, `upload-artifact` en v7 (monitor + process-callbacks) ; run CI réel vert, avertissement Node 20 disparu. `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` devenu superflu (à retirer). **PR #5** : `tests/test_inscriptions.py` (10 tests `_parse_inscriptions`). 27 tests au total.
 - **Protocole sessions cloud** (voir CLAUDE.md) : une session cloud écrit dans `memory/sessions/<date>-<sujet>.md`, jamais dans `reprise.md`.
 
 ## Prochaine action
-- Surveiller le 1er run du cron après les merges (retry du push, `!cancelled()`) : `gh run list ... --limit=5`.
+- Run CI manuel vert après les merges (01/11) ; vérifier un run planifié (cron) : `gh run list ... --limit=5`.
 - Non vérifié en réel : (a) alerte `detail_missing` possiblement quotidienne si l'onglet « Convocations » n'existe pas avant publication ; (b) `_check_convocation` ne reconnaît plus un `.pdf` sans « convoc » → valider sur un vrai body AJAX.
-- `memory/sessions/2026-11-01-*.md` : intégrés ici, à supprimer au prochain commit.
+- Retirer `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` de `monitor.yml` (via PR).

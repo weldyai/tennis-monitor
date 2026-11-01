@@ -1,6 +1,6 @@
 # Reprise — Tennis Monitor
-## État
-En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min, derniers runs OK (01/11). 133 clés connues, 11 tournois listés, 0 suivi (alerte tracked_empty du 31/10). Dernier changement : 01/11, PR #1 (durcissement scraper) et #2 (tests dédup) mergées.
+## État (01/11/2026)
+En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monitor `11,41`, callbacks `3-58/5`) mais GitHub les retarde encore de 3 à 8 h. 11 tournois sur le site (parsing 11/11), 1 suivi : TCR GRADE 3 (31-10-2026), clic « Suivre » validé en réel le 01/11. Goal « remettre à plat » en cours : `memory/goal.md`.
 
 ## Repères
 - Vérifier la santé : `gh run list --repo weldyai/tennis-monitor --workflow=monitor.yml --limit=5` (ou `/check`).
@@ -14,7 +14,12 @@ En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min,
 - **PR #4 (CI)** : `checkout`, `setup-python`, `upload-artifact` en v7 (monitor + process-callbacks) ; run CI réel vert, avertissement Node 20 disparu. `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` devenu superflu (à retirer). **PR #5** : `tests/test_inscriptions.py` (10 tests `_parse_inscriptions`). 27 tests au total.
 - **Protocole sessions cloud** (voir CLAUDE.md) : une session cloud écrit dans `memory/sessions/<date>-<sujet>.md`, jamais dans `reprise.md`.
 
+## Fait le 01/11 (goal « remettre à plat », PR #6 mergée)
+- Cause racine « Suivre sans effet » / « tournois ratés » : retard des crons GitHub (dépôt public, pas lié au plan gratuit), pas un bug de code. Bot OK, pas de webhook, 0 update en attente.
+- PR #6 : `_check_convocation` (PDF hors règlement dans l'onglet Convocations = publié), parsing tolérant + alerte `parse_gap`, alerte `cron_lag`, alertes avec cause + correction, concurrency partagée monitor/callbacks, crons hors :00/:30. 35 tests verts, run CI vert.
+- Test final : clic « Suivre » traité après déclenchement manuel de `process-callbacks.yml`.
+
 ## Prochaine action
-- Run CI manuel vert après les merges (01/11) ; vérifier un run planifié (cron) : `gh run list ... --limit=5`.
-- Non vérifié en réel : (a) alerte `detail_missing` possiblement quotidienne si l'onglet « Convocations » n'existe pas avant publication ; (b) `_check_convocation` ne reconnaît plus un `.pdf` sans « convoc » → valider sur un vrai body AJAX.
-- Retirer `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` de `monitor.yml` (via PR).
+- Déclencheur externe cron-job.org → `workflow_dispatch` (callbacks 5 min, monitor 11,41) : Brahim crée un token GitHub fine-grained (repo tennis-monitor, Actions read/write) ; login Google bloqué dans l'onglet piloté, à faire dans son Chrome. Puis vérifier avec `gh run list` des runs `workflow_dispatch` à cadence.
+- Convocation non validable en réel tant qu'aucune n'est publiée ; `detail_missing` à surveiller.
+- Retirer `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` de `monitor.yml` (via PR). Clore le goal quand le déclencheur externe est vérifié.

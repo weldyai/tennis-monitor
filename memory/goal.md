@@ -1,6 +1,6 @@
 # Goal actif — remettre à plat Tennis Monitor (tournois ratés, bouton Suivi, notif convocation)
 
-**Statut** : en cours — itération 2 (2026-11-01), branche claude/fix-suivi
+**Statut** : en cours — itération 2, PR #6 mergée, test Suivre OK ; reste le déclencheur externe (2026-11-01), branche claude/fix-suivi
 
 ## Objectif
 Tennis Monitor détecte tous les tournois, le bouton « Suivre » Telegram enregistre bien le suivi, et la notification de convocation part quand elle est publiée.

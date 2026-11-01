@@ -1,6 +1,6 @@
 # Reprise — Tennis Monitor
 ## État (01/11/2026)
-En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monitor `11,41`, callbacks `3-58/5`) mais GitHub les retarde encore de 3 à 8 h. 11 tournois sur le site (parsing 11/11), 1 suivi : TCR GRADE 3 (31-10-2026), clic « Suivre » validé en réel le 01/11. Goal « remettre à plat » en cours : `memory/goal.md`.
+En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monitor `11,41`, callbacks `3-58/5`) mais GitHub les retarde encore de 3 à 8 h. 11 tournois sur le site (parsing 11/11), 2 suivis : TCR GRADE 3 (31-10-2026) et COBM GRADE 4 (14-11-2026), clic « Suivre » validé en réel le 01/11. Goal « remettre à plat » en cours : `memory/goal.md`.
 
 ## Repères
 - Vérifier la santé : `gh run list --repo weldyai/tennis-monitor --workflow=monitor.yml --limit=5` (ou `/check`).
@@ -23,6 +23,8 @@ En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monito
 - cron-job.org en place (token GitHub fine-grained, repo tennis-monitor, Actions read/write, expire le 31/10/2027) : job « tennis callbacks » toutes les 5 min, job « tennis monitor » à :00 et :30, tous deux en `workflow_dispatch` sur `main`.
 - Cadence vérifiée (`gh run list`, 21:45 à 22:40 UTC) : callbacks toutes les 5 min, monitor toutes les 30 min, tous en succès. Un seul run callbacks annulé (20:00, concurrence partagée avec le monitor), effet connu et acceptable.
 - Crons GitHub (`11,41` et `3-58/5`) conservés comme filet de secours.
+
+- 01/11 : suivi COBM GRADE 4 confirmé en réel ; latence du clic jusqu'à ~5 min + exécution, acceptée par Brahim (cadence callbacks gardée à 5 min).
 
 ## Prochaine action
 - Convocation non validable en réel tant qu'aucune n'est publiée (TCR GRADE 3 suivi) ; `detail_missing` et `cron_lag` à surveiller.

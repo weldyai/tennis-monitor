@@ -560,6 +560,11 @@ def _run_scrape(state: dict, cb_modified: bool):
         print(f"Seulement {len(tournaments)} tournois — retry dans 10s...")
         time.sleep(10)
         tournaments = fetch_tournament_list()
+        if tournaments is None:
+            print("Site indisponible au retry — état non modifié.")
+            if cb_modified:
+                save_state(state)
+            sys.exit(0)
         if not tournaments:
             send_alert_throttled(
                 state, "parse_empty",

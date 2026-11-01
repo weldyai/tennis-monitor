@@ -134,7 +134,7 @@
     "TOURNOI TCMT 10-12 ANS|11-07-2026|TCMT",
     "TOURNOI DOUBLE FRMT 10-12 ANS|28-03-2026|RTCMO"
   ],
-  "updated_at": "2026-11-01T22:31:22.526027+00:00",
+  "updated_at": "2026-11-01T22:45:16.050172+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -888,9 +888,19 @@
       "inscription_avant": "26-10-2026",
       "last_inscriptions": "  • GRADE 3 : Simple Messieurs de 161 à NC : 124 inscrits (champ limité à 127 joueurs)\n  • GRADE 3 : Simple  Dames de 81 à NC : 14 inscrites (champ limité à 16 joueuses)",
       "convocation_notified": true
+    },
+    "TOURNOI COBM GRADE 4|14-11-2026|COBM": {
+      "nom": "TOURNOI COBM GRADE 4",
+      "ville": "BENI MELLAL",
+      "club": "COBM",
+      "debut": "14-11-2026",
+      "fin": "29-11-2026",
+      "inscription_avant": "09-11-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
-  "telegram_offset": 478509663,
+  "telegram_offset": 478509665,
   "count_history": [
     11,
     11,

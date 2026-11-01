@@ -1,4 +1,9 @@
 # Reprise — Tennis Monitor
+
+## 2026-11-01 — Test dédup (branche `claude/test-dedup`, depuis main)
+- Ajout `tests/test_dedup.py` + `tests/conftest.py` (env Telegram factices) : 4 tests pytest sur `_parse_tournaments_raw` / `make_key` (même nom + édition ou club différent conservé, doublon exact retiré, ordre serveur préservé).
+- `pytest` ajouté à `requirements.txt` (règle dépendances).
+
 ## État
 En production : GitHub Actions `weldyai/tennis-monitor`, cron toutes les 30 min, derniers runs OK (26/10). 120 tournois connus, 1 suivi. Dernier commit : 20/08 (fix cron callbacks 5 min).
 

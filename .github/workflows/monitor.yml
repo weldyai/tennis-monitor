@@ -2,11 +2,15 @@ name: Tennis Monitor
 
 on:
   schedule:
-    - cron: "0,30 * * * *"   # toutes les 30 minutes
+    - cron: "11,41 * * * *"   # toutes les 30 min, hors :00/:30 (pics de charge GitHub)
   workflow_dispatch:        # déclenchement manuel depuis GitHub
 
 permissions:
   contents: write
+
+concurrency:
+  group: telegram-state
+  cancel-in-progress: false
 
 jobs:
   check:

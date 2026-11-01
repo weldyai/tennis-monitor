@@ -2,7 +2,7 @@ name: Process Telegram Callbacks
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # toutes les 5 minutes (GitHub ne fiabilise pas en dessous)
+    - cron: "3-58/5 * * * *"   # toutes les 5 min, hors :00/:30 (pics de charge GitHub)
   workflow_dispatch:
 
 permissions:
@@ -25,26 +25,13 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: DIAG telegram (temporaire, lecture seule)
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          B=https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN
-          echo "== getMe"; curl -s $B/getMe
-          echo; echo "== getWebhookInfo"; curl -s $B/getWebhookInfo
-          echo; echo "== getUpdates (sans offset, ne confirme rien)"; curl -s "$B/getUpdates?timeout=0&allowed_updates=%5B%22message%22,%22callback_query%22%5D"
-          echo; echo "chat_id=$TELEGRAM_CHAT_ID"
-
       - name: Process callbacks
-        if: false
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python -u scraper.py --callbacks-only
 
       - name: Commit updated state
-        if: false
         run: |
           git config user.name "tennis-monitor"
           git config user.email "bot@tennis-monitor"

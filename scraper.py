@@ -138,6 +138,26 @@ def save_state(state: dict):
 
 # ─── Parsing ─────────────────────────────────────────────────────────────────
 
+_PARSE_META: dict = {"unparsed": []}
+_LOOSE_ROW = re.compile(
+    r"<COLONNE>([^<]{1,150})</COLONNE>\s*<COLONNE>([^<]*)</COLONNE>"
+    r"(?:<COLONNE[^/]*/?>)*\s*<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"
+    r"\s*<COLONNE>\d{2}-\d{2}-\d{4}</COLONNE>",
+    re.DOTALL,
+)
+
+
+def _find_unparsed(decoded: str, seen: set) -> list[str]:
+    """Lignes qui ressemblent à un tournoi (nom, club, deux dates) mais absentes du résultat."""
+    from html import unescape
+    missed = []
+    for m in _LOOSE_ROW.finditer(decoded):
+        key = (unescape(m.group(1).strip()), m.group(3), unescape(m.group(2).strip()))
+        if (key[0], key[1], key[2]) not in seen and key[0] not in missed:
+            missed.append(key[0])
+    return missed
+
+
 def _parse_tournaments_raw(raw_text: str) -> list[dict]:
     from html import unescape
     decoded = _decode_hex(raw_text)
@@ -147,8 +167,8 @@ def _parse_tournaments_raw(raw_text: str) -> list[dict]:
         r"(?:<COLONNE[^/]*/?>)*"
         r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"
         r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>"
-        r"<COLONNE>([^<]+)</COLONNE>"
-        r"<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>",
+        r"<COLONNE>([^<]*)</COLONNE>"
+        r"(?:<COLONNE>(\d{2}-\d{2}-\d{4})</COLONNE>)?",
         re.DOTALL,
     )
     tournaments, seen = [], set()
@@ -169,8 +189,9 @@ def _parse_tournaments_raw(raw_text: str) -> list[dict]:
             "debut": debut,
             "fin": m.group(4),
             "ville": unescape(m.group(5).strip()),
-            "inscription_avant": m.group(6),
+            "inscription_avant": m.group(6) or "",
         })
+    _PARSE_META["unparsed"] = _find_unparsed(decoded, seen)
     return tournaments
 
 
@@ -206,16 +227,19 @@ _CONVOC_PUBLISHED = re.compile(
     r"|t[ée]l[ée]charger[^<]{0,100}convoc|convocation[^<]{0,100}disponible",
     re.I,
 )
+_PDF_CONTEXT = re.compile(r"[^<>\"']{0,120}\.pdf", re.I)
 
 
 def _check_convocation(ajax_bodies: list[str]) -> bool:
-    """True si la convocation est publiée. Un PDF seul (règlement, etc.) ne suffit pas :
-    il doit être associé au mot « convoc ». Un body « ultérieurement » est ignoré
+    """True si la convocation est publiée. Les bodies viennent du seul onglet Convocations :
+    tout PDF y vaut publication, sauf un règlement. Un body « ultérieurement » est ignoré
     sans masquer un body publié qui le suivrait."""
     for body in ajax_bodies:
         if _CONVOC_PENDING.search(body):
             continue
         if _CONVOC_PUBLISHED.search(body):
+            return True
+        if any("glement" not in m.group(0).lower() for m in _PDF_CONTEXT.finditer(body)):
             return True
     return False
 
@@ -544,8 +568,32 @@ def main():
         raise
 
 
+def _check_scrape_lag(state: dict):
+    """Auto-diagnostic : écart anormal entre deux scrapes (cron GitHub throttlé)."""
+    now = datetime.now(timezone.utc)
+    last = state.get("last_scrape_at")
+    state["last_scrape_at"] = now.isoformat()
+    if not last:
+        return
+    try:
+        gap_h = (now - datetime.fromisoformat(last)).total_seconds() / 3600
+    except Exception:
+        return
+    if gap_h >= 2:
+        send_alert_throttled(
+            state, "cron_lag",
+            f"⏱ <b>Scrape en retard</b>\n\n{gap_h:.1f} h depuis le scrape précédent (attendu : 30 min).\n"
+            "Cause probable : GitHub retarde les crons sous charge (pire aux minutes :00/:30).\n"
+            "Correction : déclencheur externe (cron-job.org → workflow_dispatch) ; "
+            "tant que ce n'est pas en place, les nouveaux tournois et les clics 🔔 Suivre sont traités avec ce retard.",
+            cooldown_hours=24,
+        )
+
+
 def _run_scrape(state: dict, cb_modified: bool):
     import time
+
+    _check_scrape_lag(state)
 
     # 2. Récupérer la liste des tournois
     tournaments = fetch_tournament_list()
@@ -575,6 +623,17 @@ def _run_scrape(state: dict, cb_modified: bool):
             save_state(state)
             sys.exit(1)
 
+    unparsed = _PARSE_META.get("unparsed") or []
+    if unparsed:
+        send_alert_throttled(
+            state, "parse_gap",
+            f"⚠️ <b>{len(unparsed)} ligne(s) du site non parsée(s)</b>\n\n"
+            + "\n".join(f"• {n}" for n in unparsed[:10])
+            + "\n\nCause probable : colonnes de la ligne changées. Le parsing a déjà été rendu tolérant "
+            "sur la fin de ligne ; si l'alerte persiste, la structure <code>&lt;COLONNE&gt;</code> a changé.",
+            cooldown_hours=12,
+        )
+
     # Auto-diagnostic : chute anormale du nombre de tournois vs historique récent
     count_history = state.setdefault("count_history", [])
     if len(count_history) >= 5:
@@ -583,8 +642,9 @@ def _run_scrape(state: dict, cb_modified: bool):
             send_alert_throttled(
                 state, "count_drop",
                 f"⚠️ <b>Anomalie scraping</b>\n\n{len(tournaments)} tournois vus contre "
-                f"{avg:.0f} en moyenne récemment. Le scraper rate peut-être des tournois "
-                f"(site changé, scroll cassé...).",
+                f"{avg:.0f} en moyenne récemment.\nCause probable : le site FRMT a retiré des "
+                f"tournois passés (normal) ou le scroll/parsing a cassé (alerte parse_gap si des lignes "
+                f"sont ignorées).\nCorrection : comparer avec le site ; si le site en montre plus, relancer /check.",
                 cooldown_hours=12,
             )
     count_history.append(len(tournaments))
@@ -613,8 +673,8 @@ def _run_scrape(state: dict, cb_modified: bool):
                 send_alert_throttled(
                     state, "stagnation",
                     f"⚠️ <b>Aucun nouveau tournoi détecté depuis {days} jours</b>\n\n"
-                    f"Soit c'est un creux normal de saison, soit le scraper rate des "
-                    f"tournois — vérifier le parsing.",
+                    f"Cause probable : creux de saison, ou scrapes retardés (voir alerte cron_lag), "
+                    f"ou parsing cassé (voir alerte parse_gap).\nCorrection : /check puis comparer avec le site.",
                     cooldown_hours=48,
                 )
 
@@ -670,7 +730,8 @@ def _run_scrape(state: dict, cb_modified: bool):
         send_alert_throttled(
             state, "tracked_empty",
             "ℹ️ <b>Aucun tournoi suivi</b> alors que des tournois sont ouverts.\n"
-            "Clique 🔔 Suivre sur un message pour être notifié des inscriptions/convocation.",
+            "Clique 🔔 Suivre sur un message pour être notifié des inscriptions/convocation.\n"
+            "Si tu as déjà cliqué : le clic est traité au prochain cron (retard possible, voir cron_lag).",
             cooldown_hours=24,
         )
 

@@ -11,6 +11,8 @@ import scraper
     (["Télécharger la convocation"], True),
     (["La convocation est disponible"], True),
     (['<a href="reglement.pdf">Règlement</a>'], False),
+    (['<a href="liste_joueurs_J1.pdf">Liste</a>'], True),
+    (['<a href="reglement.pdf">Règlement</a>', '<a href="tableau.pdf">T</a>'], True),
     (["à venir ultérieurement", '<a href="convoc.pdf">c</a>'], True),
     (["à venir ULTERIEUREMENT", "rien d'utile"], False),
 ])

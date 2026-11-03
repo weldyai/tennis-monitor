@@ -135,7 +135,7 @@
     "TOURNOI DOUBLE USM TCC GRADE 2 &3|01-05-2026|USM/TCC",
     "TOURNOI RTCMA 13-14 ANS|06-06-2026|RTCMA"
   ],
-  "updated_at": "2026-11-03T12:31:50.952841+00:00",
+  "updated_at": "2026-11-03T12:35:14.336581+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -909,9 +909,19 @@
       "inscription_avant": "09-11-2026",
       "last_inscriptions": "  • GRADE 4 : Simple Messieurs de 601 à NC : 30 inscrits (champ limité à 100 joueurs)\n  • GRADE 4 : Simple  Dames de 151 à NC : 1 inscrite (champ limité à 40 joueuses)",
       "convocation_notified": false
+    },
+    "TOURNOI RTCMO 10-12 ANS|28-11-2026|RTCMO": {
+      "nom": "TOURNOI RTCMO 10-12 ANS",
+      "ville": "MOHAMMEDIA",
+      "club": "RTCMO",
+      "debut": "28-11-2026",
+      "fin": "13-12-2026",
+      "inscription_avant": "13-11-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
-  "telegram_offset": 478509665,
+  "telegram_offset": 478509667,
   "count_history": [
     11,
     11,

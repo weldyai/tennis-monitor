@@ -135,7 +135,7 @@
     "TOURNOI ASAS 10-12 ANS|18-04-2026|ASAS",
     "TOURNOI DOUBLE RTCA GRADE 2 (reporté)|01-05-2026|RTCA"
   ],
-  "updated_at": "2026-11-04T13:02:33.350915+00:00",
+  "updated_at": "2026-11-04T13:05:18.761365+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -938,7 +938,7 @@
       ]
     }
   },
-  "telegram_offset": 478509671,
+  "telegram_offset": 478509675,
   "count_history": [
     12,
     12,

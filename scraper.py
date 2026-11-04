@@ -282,7 +282,7 @@ def _fmt_time(m: re.Match) -> str:
 
 def _clean_opponent(line: str) -> str:
     line = _DAY_TIME.sub(" ", line)
-    line = re.sub(r"^\s*\d{1,3}\s+(?:\d+|NC)?\s*", "", line)
+    line = re.sub(r"^\s*\d{1,3}\s+(?:(?:\d+|NC)\s+){0,2}", "", line)
     line = re.sub(r"Umpire|\bA \d.*$", " ", line)
     line = re.sub(r"(?<=\D)0\s*$|\s0\s*$", " ", line)
     line = re.sub(r"\s{2,}", " ", line).strip()
@@ -308,7 +308,7 @@ def _later_round_entry(lines: list[str], i: int) -> dict:
             "contexte": "Qualifié(e) au tour suivant (nom relevé dans une colonne de tour)"}
 
 
-def _find_player_matches(text: str) -> list[dict]:
+def _find_in_lines(text: str) -> list[dict]:
     """Cherche SUIVI_JOUEURS dans le texte d'un PDF (pdftotext -layout).
     Ligne de tableau (numérotée) : adversaire = ligne appariée (impair/pair), horaire = premier
     jour+heure sur l'une des deux lignes. Autre ligne (liste) : contexte = dernière phrase au-dessus."""
@@ -346,14 +346,155 @@ def _find_player_matches(text: str) -> list[dict]:
     return found
 
 
+_HDR_COL = re.compile(r"\d+(?:st|nd|rd|th) Round|Quarter\w*|Semi\w*|Final(?!ist)\w*", re.I)
+_NOISE = re.compile(r"\b\d{1,2}H\d{0,2}\b|\b(?:LUN|MAR|MER|JEU|VEN|SAM|DIM)\b|Umpire|\b0\b|\bA \d.*$|Finalist \d:|Vainqueur|\bFinal\b|Page \d.*", re.I)
+
+
+def _cell(text: str, lo: int, hi: int | None) -> str:
+    seg = text[max(lo, 0):hi] if len(text) > lo else ""
+    seg = _NOISE.sub(" ", _DAY_TIME.sub(" ", seg))
+    return re.sub(r"\s+", " ", seg).strip()
+
+
+def _parse_draw_tables(lines: list[str]) -> list[dict]:
+    """Tableaux à élimination : lignes numérotées 1..N (+ lignes de continuation), colonnes de tours
+    repérées par l'en-tête « 2nd Round / 3rd Round / Quarterfinals… » (positions en caractères)."""
+    tables, cur, hdr = [], None, []
+    for i, line in enumerate(lines):
+        if re.search(r"\bSt\.\s+Rank\b", line):
+            h = [m.start() for m in _HDR_COL.finditer(line)]
+            if h:
+                hdr = h
+            continue
+        m = _DRAW_ROW.match(line)
+        idx = int(m.group(1)) if m else None
+        if idx == 1 and hdr:
+            cur = {"hdr": hdr, "rows": {1: [i]}, "last": 1, "lines": lines}
+            tables.append(cur)
+        elif cur and idx == cur["last"] + 1:
+            cur["rows"][idx] = [i]
+            cur["last"] = idx
+        elif cur and cur["last"] > 0 and not re.search(r"Acc\. Ranking|Seeded", line):
+            cur["rows"][cur["last"]].append(i)
+    return tables
+
+
+def _row_lines(t: dict, r: int) -> list[str]:
+    return [t["lines"][i] for i in t["rows"].get(r, [])]
+
+
+def _participant(t: dict, r: int) -> str:
+    parts = []
+    for n, ln in enumerate(_row_lines(t, r)):
+        tm = _DAY_TIME.search(ln)
+        seg = ln[: min(t["hdr"][0] - 2, tm.start() if tm else 999)]
+        parts.append(_clean_opponent(seg) if n == 0 else _NOISE.sub(" ", seg).strip())
+    return re.sub(r"\s{2,}", " ", " ".join(p for p in parts if p and p != "?")).strip()
+
+
+def _round_label(k: int, total: int) -> str:
+    return {0: "Finale", 1: "Demi-finale", 2: "Quart de finale"}.get(total - k, f"{k}e tour" if k > 1 else "1er tour")
+
+
+def _table_status(t: dict, prenom: str, label: str) -> dict | None:
+    hdr, n = t["hdr"], t["last"]
+    total = max(1, (n - 1).bit_length())
+    me = next((r for r in t["rows"] if re.search(rf"\bAMDOUY\b.*\b{prenom}\b", _row_lines(t, r)[0][: hdr[0] + 3], re.I)), None)
+    if me is None:
+        return None
+
+    def col_of(off: int) -> int:
+        return max((j for j in range(len(hdr)) if hdr[j] <= off + 3), default=-1)
+
+    def tokens(rows, j):
+        out = []
+        for r in rows:
+            for ln in _row_lines(t, r):
+                out += [m for m in _DAY_TIME.finditer(ln) if
+                        min((c for c in range(len(hdr)) if hdr[c] >= m.start() - 3), default=len(hdr) - 1) == j]
+        return out
+
+    reached = -1
+    for r in range(1, n + 1):
+        for ln in _row_lines(t, r):
+            for m in re.finditer(r"\bAMDOUY\b", ln):
+                if m.start() >= hdr[0] - 6:
+                    reached = max(reached, col_of(m.start()))
+    k = reached + 2
+    entry = {"joueur": label, "ligne": "", "contexte": "", "adversaire": "", "horaire": ""}
+    if k > total:
+        entry["statut"] = "Vainqueur du tableau"
+        return entry
+    size = 1 << k
+    start = ((me - 1) // size) * size + 1
+    half = size // 2
+    mine_first = me < start + half
+    other = range(start + half, start + size) if mine_first else range(start, start + half)
+    block = range(start, start + size)
+    entry["statut"] = _round_label(k, total)
+
+    # éliminé ? un autre joueur est déjà dans la colonne « tour k+1 » du bloc
+    if k - 1 < len(hdr):
+        for r in block:
+            for ln in _row_lines(t, r):
+                c = _cell(ln, hdr[k - 1] - 3, hdr[k] - 3 if k < len(hdr) else None)
+                if re.search(r"[A-Za-zÀ-ÿ]{3,}", c) and not re.search(r"AMDOUY", c, re.I) and k - 1 >= 0 and k >= 1 and reached < k - 1:
+                    entry["statut"] = f"Éliminé ({_round_label(k, total)})"
+                    entry["adversaire"] = next((_participant(t, x) for x in block
+                                                if _participant(t, x).upper().startswith(c.split()[0].upper())), c)
+                    return entry
+    # adversaire
+    if k == 1:
+        entry["adversaire"] = _participant(t, next(iter(other)))
+    else:
+        winner = ""
+        for r in other:
+            for ln in _row_lines(t, r):
+                c = _cell(ln, hdr[k - 2] - 3, hdr[k - 1] - 3)
+                if c:
+                    winner = c
+        if winner:
+            full = next((_participant(t, r) for r in other
+                         if _participant(t, r).upper().startswith(winner.split()[0].upper())), winner)
+            entry["adversaire"] = full
+        elif k == 2:
+            entry["adversaire"] = "vainqueur de " + " / ".join(_participant(t, r) for r in other)
+        else:
+            entry["adversaire"] = "à déterminer"
+    tk = tokens(block, k - 1)
+    if tk:
+        entry["horaire"] = _fmt_time(tk[0])
+    return entry
+
+
+def _find_player_matches(text: str) -> list[dict]:
+    lines = text.splitlines()
+    tables = _parse_draw_tables(lines)
+    out, covered = [], set()
+    for t in tables:
+        covered |= {i for ids in t["rows"].values() for i in ids}
+        for prenom, label in SUIVI_JOUEURS:
+            e = _table_status(t, prenom, label)
+            if e:
+                out.append(e)
+    rest = "\n".join("" if i in covered else ln for i, ln in enumerate(lines))
+    return out + _find_in_lines(rest)
+
 def _match_key(url: str, m: dict) -> str:
-    ligne = "" if m["adversaire"] else m["ligne"]
-    raw = "|".join((url, m["joueur"], ligne, m["adversaire"], m["horaire"]))
+    ligne = "" if (m["adversaire"] or m.get("statut")) else m["ligne"]
+    raw = "|".join((url, m["joueur"], m.get("statut", ""), ligne, m["adversaire"], m["horaire"]))
     return hashlib.md5(raw.encode()).hexdigest()[:10]
 
 
 def _format_player_match(info: dict, url: str, m: dict) -> str:
     head = f"🎾 <b>{m['joueur']}</b>\n<b>{info['nom']}</b>\n📍 {info.get('ville')} — {info.get('club')}\n\n"
+    if m.get("statut"):
+        body = f"🏆 {m['statut']}\n"
+        if m["adversaire"].startswith("Éliminé") or m["statut"].startswith("Éliminé"):
+            body += f"❌ battu par {m['adversaire']}\n"
+        elif m["statut"] != "Vainqueur du tableau":
+            body += (f"📅 {m['horaire'] or 'horaire non publié'}\n🆚 {m['adversaire']}\n")
+        return head + body + f"\n👉 <a href=\"{url}\">Voir le PDF</a>"
     if m["adversaire"] or m["horaire"]:
         body = (f"📅 {m['horaire'] or 'horaire non lisible'}\n"
                 f"🆚 {m['adversaire'] or 'adversaire non lisible'}\n")

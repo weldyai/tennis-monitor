@@ -1,3 +1,26 @@
+# Goal actif (04/11/2026, 2e)
+**Statut** : en cours
+**Objectif** : en CI seule (sans Mac), notif Telegram à chaque mise à jour du PDF de convocation d'un tournoi suivi avec le PROCHAIN match de Sara/Samy AMDOUY (jour, heure, adversaire) + changements.
+**Critère de fin** : (1) tests verts sur de vrais PDF (LANORIA, TCR + PDF de tournois terminés du site comme corpus de tours avancés) où le parseur donne le bon prochain match (jour/heure/adversaire) pour un joueur testé à chaque tour ; (2) run CI vert avec notifs LANORIA cohérentes.
+**Périmètre** : autorisé = `scraper.py`, `tests/`, fixtures texte de PDF dans `tests/` ; interdit = édition manuelle de `state.json`, workflows (sauf besoin avéré), autres fichiers. Commit/push : demander.
+**Budget** : 5 itérations, checkpoint à la 3.
+**Vérificateur** : `pytest` + comparaison manuelle de la sortie du parseur à la lecture du PDF.
+**Journal** :
+- It.1 : corpus site = seulement tournois en cours/à venir (pas de tournoi terminé) → pas de PDF « tours avancés » réel avant le 8/11. Parseur de tableau écrit (colonnes d'en-tête « 2nd Round… », temps par colonne, adversaire = moitié opposée du bloc, éliminé/qualifié) validé sur le vrai PDF LANORIA (1er et 2e tour: DIM 12H15 vs KHARCHAFI ; 2e: DIM 16H00) + variantes synthétiques + mise en page TCR. 48 tests verts. Reste : commit/push (accord requis) + run CI + vérif avec vrai PDF après le 8/11.
+
+---
+# Archive 04/11 — notifs joueurs + poppler CI (atteint)
+**Statut** : atteint
+**Objectif** : suivi Sara/Samy AMDOUY opérationnel en CI (pdftotext dispo sur le runner).
+**Critère de fin** : run CI sans erreur `pdftotext` pour LANORIA/TCR ET `state.json["tracked"]` LANORIA `players_notified` non vide (notifs Telegram parties).
+**Périmètre** : autorisé = `.github/workflows/monitor.yml`, `scraper.py`, `tests/`, commit+push sur main pour cette correction ; interdit = édition manuelle de `state.json`, autres fichiers.
+**Budget** : 5 itérations, checkpoint à la 3.
+**Vérificateur** : logs `gh run view --log` + `state.json` après pull + `pytest`.
+**Journal** :
+- It.1 : poppler-utils ajouté à monitor.yml (df9f7ed). Run 41830815075 vert, 0 erreur pdftotext, LANORIA players_notified=2 (Samy DIM 12H15 vs KHARCHAFI ADIL ; Sara liste « ultérieurement »).
+
+---
+# Archive — goal précédent
 # Goal actif — remettre à plat Tennis Monitor (tournois ratés, bouton Suivi, notif convocation)
 
 **Statut** : atteint (01/11/2026) — critères 1 à 6 verts ; convocation réelle à valider à la prochaine publication

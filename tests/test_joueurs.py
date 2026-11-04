@@ -53,3 +53,78 @@ def test_cle_stable_si_score_change():
     a = {"joueur": "J", "ligne": "38 A 0", "adversaire": "X", "horaire": "DIM 9H00"}
     b = {**a, "ligne": "38 A 6/1 6/2"}
     assert scraper._match_key("u", a) == scraper._match_key("u", b)
+
+
+def _lanoria():
+    import os
+    p = os.path.join(os.path.dirname(__file__), "fixtures", "lanoria_hommes.txt")
+    return open(p, encoding="utf-8").read().splitlines()
+
+
+def _put(line, off, txt):
+    line = line.ljust(off + len(txt) + 1)
+    return line[:off] + txt + line[off + len(txt):]
+
+
+def _samy(lines):
+    ms = [m for m in scraper._find_player_matches("\n".join(lines)) if m["joueur"] == "Samy AMDOUY"]
+    assert len(ms) == 1
+    return ms[0]
+
+
+def _row(lines, needle):
+    return next(n for n, l in enumerate(lines) if needle in l)
+
+
+def test_tableau_reel_premier_tour():
+    m = _samy(_lanoria())
+    assert (m["statut"], m["horaire"], m["adversaire"]) == ("1er tour", "DIM 12H15", "KHARCHAFI ADIL USM/TCC")
+
+
+def test_tableau_deuxieme_tour_adversaire_inconnu():
+    L = _lanoria(); i = _row(L, "675 AMDOUY")
+    L[i] = _put(L[i], 57, "AMDOUY")
+    m = _samy(L)
+    assert m["statut"] == "2e tour" and m["horaire"] == "DIM 16H00"
+    assert m["adversaire"].startswith("vainqueur de Q11 / TIMOUMI HAMZA")
+
+
+def test_tableau_deuxieme_tour_adversaire_connu():
+    L = _lanoria(); i = _row(L, "675 AMDOUY")
+    L[i] = _put(L[i], 57, "AMDOUY"); L[i + 2] = _put(L[i + 2], 57, "TIMOUMI")
+    m = _samy(L)
+    assert m["statut"] == "2e tour" and m["adversaire"].startswith("TIMOUMI HAMZA")
+
+
+def test_tableau_elimine_au_premier_tour():
+    L = _lanoria(); i = _row(L, "675 AMDOUY")
+    L[i - 1] = _put(L[i - 1], 57, "KHARCHAFI")
+    m = _samy(L)
+    assert m["statut"].startswith("Éliminé") and m["adversaire"].startswith("KHARCHAFI")
+
+
+def test_tableau_troisieme_tour():
+    L = _lanoria(); i = _row(L, "675 AMDOUY")
+    L[i] = _put(L[i], 57, "AMDOUY"); L[i] = _put(L[i], 73, "AMDOUY")
+    assert _samy(L)["statut"] == "3e tour"
+
+
+def test_notification_changement_tour(monkeypatch):
+    sent = []
+    monkeypatch.setattr(scraper, "send_telegram", lambda m, reply_markup=None: sent.append(m))
+    L = _lanoria(); i = _row(L, "675 AMDOUY")
+    versions = ["\n".join(L)]
+    L[i] = _put(L[i], 57, "AMDOUY"); versions.append("\n".join(L))
+    cur = {"t": versions[0]}
+    monkeypatch.setattr(scraper, "_pdf_to_text", lambda u: cur["t"])
+    monkeypatch.setattr(scraper, "fetch_detail", lambda nom, tabs: {"convocation": True, "convocation_pdfs": ["u.pdf"]})
+    st = {"tracked": {"K": {"nom": "T", "ville": "V", "club": "C", "debut": "01-01-2099",
+                            "fin": "02-01-2099", "convocation_notified": True}}}
+    scraper.check_tracked_tournaments(st)
+    n1 = sum("Samy" in m for m in sent)
+    scraper.check_tracked_tournaments(st)
+    assert sum("Samy" in m for m in sent) == n1
+    cur["t"] = versions[1]
+    scraper.check_tracked_tournaments(st)
+    assert sum("Samy" in m for m in sent) == n1 + 1
+    assert any("2e tour" in m and "DIM 16H00" in m for m in sent)

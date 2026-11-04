@@ -1,0 +1,77 @@
+     St. Rank NOM             PRENOM          CLUB       2nd Round       3rd Round     Quarterfinals         Semifinals
+ 1     601 DARDAZ        ADIL         SM     0
+ 2         Q16                               DIM 8H30                 0
+ 3     690 BENOMAR       MOHAMED      OCC    0                        DIM 14H45
+ 4     690 ZAMANI        YOUSSEF      WIFAQ DIM 8H30                         Umpire    0
+ 5     643 LOURAOUI      BADR         ACSA 0
+ 6         Q1                                DIM 8H30                 0
+ 7     648 EL BAKKALI KASSIMI
+                         ALI          OCC    0                        DIM 14H45
+ 8     768 MAZIANE       BOUCHAIB     RTCMO DIM 8H30                                       Umpire      0
+ 9     622 BENTAIBI      MED          DHJTC 0
+10         Q9                                DIM 8H30                 0
+11     665 HADDADI       MOHAMMED     USCM 0                          DIM 14H45
+12     741 BENAMAR       MEHDI        OCC    DIM 8H30                        Umpire    0
+13     622 KAMALI        MOHAMED KAMALRUC    0
+14         Q8                                DIM 9H45                 0
+15     665 BADDOU        MHAMED       PCC    0                        DIM 14H45
+16     742 EL ACHHAB     HICHAM       RTCMO DIM 9H45                                   Finalist 1:     0
+17     607 BOUCHIYOUA SAAD EDDINE ASAS 0                                                  Umpire
+18         Q13                               DIM 9H45                 0
+19     681 EL HAKIMI     MOHAMED ALAA NARJISSE
+                                             0                        DIM 16H00
+20     705 BOUNOUAR      MOHAMED JAD ACSA DIM 9H45                           Umpire    0
+21     639 KHOURIBACH MEHDI           TCK    0
+22         Q4                                DIM 9H45                 0
+23     651 EL BILALI     ABDELMOGHIT SCT     0                        DIM 16H00
+24     756 DRISSI        JAD          RIAD   DIM 9H45                                      Umpire      0
+25     607 SAKKAT        GHALI        OCC    0
+26         Q12                               DIM 11H00                0
+27     675 SEKKAT        OTHMANE      BP     0                        DIM 16H00
+28     705 ZNAIDI        MOHAMED      ASAS DIM 11H00                         Umpire    0
+29     633 CHAHAR        MOHAMED REDAASAS 0
+30         Q5                                DIM 11H00                0                    Final            Vainqueur
+31     651 IMAN          WALID        KAHRAMA0                        DIM 16H00        0
+32     756 BENFILALI MIMOUN
+                         REDA         WIFAQ DIM 11H00                                      Umpire      0
+33     756 ALAOUI        ISMAIL       USCM 0                                           0
+34     651 MALKI         ADAM         RTCMO DIM 11H00                 0
+35         Q6                                0                        DIM 16H00
+36     631 BENOMAR       WALID        OCC    DIM 11H00                       Umpire    0
+37     711 KHARCHAFI     ADIL         USM/TCC0
+38     675 AMDOUY        SAMY         OCC    DIM 12H15                0
+39         Q11                               0                        DIM 16H00
+40     607 TIMOUMI       HAMZA               DIM 12H15
+                                      ONEE RABAT                                           Umpire      0
+41     768 BOURRAS       ELMEHDI      TCK    0
+42     651 AIT ARCHID    ABDERRAHMANEOCBG DIM 12H15                   0
+43         Q3                                0                        DIM 17H15
+44     640 BEN AHMED     OTMANE       WIFAQ DIM 12H15                        Umpire    0
+45     705 AIT DAHHOU ABDERRAHMAN TSCM 0
+46     681 LAGHRARI BENLAHBIB
+                         GHALI        ACSA DIM 12H15                  0
+47         Q14                               0                        DIM 17H15
+48     607 AAMRI         ADIL         KAHRAMADIM 12H15                                 Finalist 2:     0
+49     753 EL MAMOUNI ABOUBAKER       DHJTC 0                                             Umpire
+50     690 BELHAMDOUNIAABDELKHALEK OCC       DIM 13H30                0
+51         Q7                                0                        DIM 17H15
+52     622 TARISSI       HOUSSAM      OCY    DIM 13H30                       Umpire    0
+53     732 SATT          MOUAD        RTCF 0
+54     665 ZERRAI        YAAKOUB      ASAS DIM 13H30                  0
+55         Q10                               0                        DIM 17H15
+56     620 ADDOUME       WASSIM       ACSA DIM 13H30                                       Umpire      0
+57     768 LAAFOU        AHMED        KAHRAMA0
+58     648 NAZIR         ZIAD         DHJTC DIM 13H30                 0
+59         Q2                                0                        DIM 17H15
+60     643 DOUKKALI      ANASS        WIFAQ DIM 13H30                        Umpire    0
+61     704 HYANI         ABDERRAHMANESCT     0
+62     659 KAMRI         YOUSSEF      DHJTC DIM 14H45                 0
+63         Q15                               0                        DIM 17H15
+64     603 EL IDRISSI JANATI
+                         NOR          COC    DIM 14H45
+
+
+Acc. Ranking Seeded players   #    Seeded players    # Lucky Losers   Replacing        Draw date/time:
+Rkg Date                      9                      1                                 Last Accepted player
+Top DA                        10                     2
+Last DA                       11                     3                                 Player representatives

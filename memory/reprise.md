@@ -26,6 +26,10 @@ En production : GitHub Actions `weldyai/tennis-monitor`. Crons décalés (monito
 
 - 01/11 : suivi COBM GRADE 4 confirmé en réel ; latence du clic jusqu'à ~5 min + exécution, acceptée par Brahim (cadence callbacks gardée à 5 min).
 
+## Fait le 04/11 (suivi Sara/Samy AMDOUY)
+- Notifs joueurs depuis les PDF de convocation (`_find_player_matches`, 6c369d3) + `poppler-utils` en CI (df9f7ed). Relecture de l'onglet Convocations à chaque run ; clé de dédup = adversaire+horaire. LANORIA GRADE 4 suivi : 2 notifs parties.
+- À affiner après les premiers résultats (8/11) : adversaire des tours suivants (aujourd'hui ligne brute).
+
 ## Prochaine action
 - Convocation non validable en réel tant qu'aucune n'est publiée (TCR GRADE 3 suivi) ; `detail_missing` et `cron_lag` à surveiller.
 - Renouveler le token GitHub avant le 31/10/2027 (cron-job.org, en-tête Authorization).

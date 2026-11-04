@@ -135,7 +135,7 @@
     "TOURNOI WIFAQ GRADE 3-4|11-04-2026|WIFAQ",
     "TOURNOI OCC GRADE 1,2 ET 3|20-07-2026|OCC"
   ],
-  "updated_at": "2026-11-04T13:14:00.522922+00:00",
+  "updated_at": "2026-11-04T13:15:13.158522+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -940,7 +940,7 @@
       ]
     }
   },
-  "telegram_offset": 478509675,
+  "telegram_offset": 478509676,
   "count_history": [
     12,
     12,

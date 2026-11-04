@@ -88,3 +88,44 @@ def test_lag_alert(monkeypatch):
     state = {"last_scrape_at": old}
     scraper._check_scrape_lag(state)
     assert sent == ["cron_lag"] and state["last_scrape_at"] > old
+
+
+def test_ne_plus_suivre_retire_le_tournoi(monkeypatch):
+    calls = _fake_updates(monkeypatch, "untrack:abc12345")
+    state = _state_with_meta()
+    state["tracked"] = {"T|01-03-2026|C": {"nom": "T"}}
+    assert scraper.process_callbacks(state) is True
+    assert state["tracked"] == {}
+    rm = calls["edited"][0][1]
+    assert rm["inline_keyboard"][0][0]["callback_data"] == "track:abc12345"
+
+
+def test_apres_suivi_bouton_ne_plus_suivre(monkeypatch):
+    calls = _fake_updates(monkeypatch, "track:abc12345")
+    scraper.process_callbacks(_state_with_meta())
+    assert calls["edited"][0][1]["inline_keyboard"][0][0]["callback_data"] == "untrack:abc12345"
+
+
+def test_ancien_bouton_suivi_devient_ne_plus_suivre(monkeypatch):
+    monkeypatch.setattr(scraper, "poll_updates", lambda o: [
+        {"update_id": 10, "callback_query": {"id": "c", "data": "noop", "message": {"message_id": 7}}}])
+    monkeypatch.setattr(scraper, "answer_callback", lambda i: None)
+    edited = []
+    monkeypatch.setattr(scraper, "edit_message_reply_markup", lambda mid, rm=None: edited.append((mid, rm)))
+    state = _state_with_meta()
+    state["tracked"] = {"T|01-03-2026|C": {"nom": "T"}}
+    scraper.process_callbacks(state)
+    assert state["tracked"] and edited[0][1]["inline_keyboard"][0][0]["callback_data"] == "untrack:abc12345"
+
+
+def test_untrack_depuis_une_notification_sans_id_map(monkeypatch):
+    key = "Open|01-03-2026|C"
+    sid = scraper.short_id(key)
+    monkeypatch.setattr(scraper, "poll_updates", lambda o: [
+        {"update_id": 10, "callback_query": {"id": "c", "data": f"untrack:{sid}", "message": {"message_id": 99}}}])
+    monkeypatch.setattr(scraper, "answer_callback", lambda i: None)
+    edited = []
+    monkeypatch.setattr(scraper, "edit_message_reply_markup", lambda mid, rm=None: edited.append(mid))
+    state = {"tracked": {key: {"nom": "Open"}}, "telegram_offset": 0}
+    assert scraper.process_callbacks(state) is True
+    assert state["tracked"] == {} and edited == [99]

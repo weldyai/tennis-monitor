@@ -694,6 +694,25 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
 
 # ─── Tracking logic ──────────────────────────────────────────────────────────
 
+def _unfollow_markup(sid: str) -> dict:
+    return {"inline_keyboard": [[{"text": "🔕 Ne plus suivre", "callback_data": f"untrack:{sid}"}]]}
+
+
+def _follow_markup(sid: str) -> dict:
+    return {"inline_keyboard": [[
+        {"text": "🔔 Suivre", "callback_data": f"track:{sid}"},
+        {"text": "⏭ Passer", "callback_data": f"pass:{sid}"},
+    ]]}
+
+
+def _edit_markups(message_ids: list, markup: dict):
+    for mid in dict.fromkeys(m for m in message_ids if m):
+        try:
+            edit_message_reply_markup(mid, markup)
+        except Exception:
+            pass
+
+
 def process_callbacks(state: dict) -> bool:
     """Lit les callbacks Telegram (boutons Suivre/Passer). Retourne True si state modifié."""
     offset = state.get("telegram_offset", 0)
@@ -721,6 +740,7 @@ def process_callbacks(state: dict) -> bool:
             pass
 
         data = cb.get("data", "")
+        clicked = (cb.get("message") or {}).get("message_id")
 
         if data.startswith("track:"):
             sid_cb = data[6:]
@@ -735,12 +755,28 @@ def process_callbacks(state: dict) -> bool:
                 }
                 print(f"Tracking activé: {key}")
                 modified = True
-            if meta and meta.get("message_id"):
-                try:
-                    edit_message_reply_markup(meta["message_id"],
-                        {"inline_keyboard": [[{"text": "✅ Suivi", "callback_data": "noop"}]]})
-                except Exception:
-                    pass
+            _edit_markups([meta and meta.get("message_id"), clicked], _unfollow_markup(sid_cb))
+
+        elif data.startswith("untrack:") or data == "noop":
+            if data == "noop":
+                sid_cb = next((sid for sid, m in id_map_meta.items()
+                               if clicked and m.get("message_id") == clicked), None)
+            else:
+                sid_cb = data[8:]
+            key = id_map.get(sid_cb) if sid_cb else None
+            if key is None and sid_cb:
+                key = next((k for k in state.get("tracked", {}) if short_id(k) == sid_cb), None)
+            if data == "noop":
+                if sid_cb:
+                    _edit_markups([id_map_meta[sid_cb].get("message_id"), clicked], _unfollow_markup(sid_cb))
+            elif key and key in state.get("tracked", {}):
+                del state["tracked"][key]
+                print(f"Tracking désactivé: {key}")
+                modified = True
+                meta = id_map_meta.get(sid_cb) or {}
+                _edit_markups([meta.get("message_id"), clicked], _follow_markup(sid_cb))
+            else:
+                _edit_markups([clicked], _follow_markup(sid_cb))
 
         elif data.startswith("pass:"):
             sid_cb = data[5:]
@@ -775,6 +811,7 @@ def check_tracked_tournaments(state: dict) -> bool:
             continue
 
         nom = info["nom"]
+        markup = _unfollow_markup(short_id(key))
         print(f"Checking tracked: {nom}")
         tabs = ["Inscriptions", "Convocations"]
 
@@ -804,7 +841,7 @@ def check_tracked_tournaments(state: dict) -> bool:
             )
             if prev:
                 msg = msg.replace("Mise à jour inscriptions", "🔄 Changement inscriptions")
-            send_telegram(msg)
+            send_telegram(msg, reply_markup=markup)
             info["last_inscriptions"] = new_inscr
             modified = True
 
@@ -817,7 +854,7 @@ def check_tracked_tournaments(state: dict) -> bool:
                 f"📅 Du {info.get('debut')} au {info.get('fin')}\n\n"
                 f"👉 <a href=\"{URL}\">Voir la convocation</a>"
             )
-            send_telegram(msg)
+            send_telegram(msg, reply_markup=markup)
             info["convocation_notified"] = True
             modified = True
 
@@ -826,7 +863,7 @@ def check_tracked_tournaments(state: dict) -> bool:
             for m in _find_player_matches(_pdf_to_text(pdf_url)):
                 k = _match_key(pdf_url, m)
                 if k not in done:
-                    send_telegram(_format_player_match(info, pdf_url, m))
+                    send_telegram(_format_player_match(info, pdf_url, m), reply_markup=markup)
                     done.append(k)
                     modified = True
 

@@ -1,0 +1,80 @@
+        TSCM MARRAKECH G3                                                                   T/Q G3 DAMES
+   DATAE                    VILLE                       GRADE                     DIR / TOURNOI                                  JUGE-ARBITRE
+   18/25                 MARRAKECH                      G3                      BRAHIME BARTAAI                                 RAJA AIT LAARIF
+St.Seed NOM              PRENOM    CLUB                 2nd Round                3rd Round        Quarterfinals                  Semifinals
+
+
+   1    LAKHDIM          CEDRAT            COC          LAKHDIM CEDRAT
+   64 BYE
+   28 AZEROUAL           ISLAM             TSCM                             JEUDU 12H45
+   33 MAHMAH             LILYA             RTCMA        JEUDI 09H00                     Umpire                              Q
+   16 KAMAL              SABRINE           ONEE RABAT   KAMAL SABRINE                             VENDREDI 09H00
+   49 BYE
+   17 EL AASSIMI         MAISSA            RTCMA        EL AASSIMI MAISSA   JEUDI 09H00
+   48 BYE                                                                                               Umpire
+   8    HAMIMOUNE        SALMA             RTCMO        HAMOUNE SALMA
+   57   BYE
+   25   BELMOUAZ         MALIKA            ACSA         BELMOUAZ MALIKA     JEUDI 09H00
+   40   BYE                                                                           Umpire                                Q
+   9    GHAZALI          AMALE             RTCMO        GHAZALI AMAL                              VENDREDI 09H00
+   56   BYE
+   24   BAJJA            SARA              CAST         BAJAA SARA          JEUDI 10H15
+   41   BYE
+   4    EL MEJJATI       ILY               USCM         EL MEJJATI ILY                                  Umpire
+   61   BYE
+   29   BENJEDDI         ZINEB             OCC          BENJEDDI ZINEB      JEUDI 10H15
+   36   BYE                                                                           Umpire                                Q
+   13   FARIDI           INAS              TCMT         FARIDI INAS                               VENDREDI 09H00
+   52   BYE
+   20   ALLALI           JOUMANA ELBATOUL
+                                   WIFAQ                ALLALI JOUMANA      JEUDI 10H15
+   45   BYE                                                                                             Umpire
+   5    GHAZALI          LEYLA             RTCMO        GHAZALI LEYLA
+   60   BYE
+   32   KOSSAI           LINA              RTCMA        KOSSAI LINA         JEUDI 10H15
+   37   BYE                                                                           Umpire                                Q
+   12   TOUZANI          SAFAE             RTCMO        TOUZANI SAFAE                             VENDREDI 09H00
+   53   BYE
+   21   DAKHLI           LINA              RUC          DAKHLI LINA         JEUDI 10H15
+   44   BYE                                                                                             Umpire
+   43   BYE                                             MANAR KENZA
+   22   MANAR            KENZA             COC
+   54   BYE                                             CHRAIBI YASMINE     JEUDI 11H30
+   11   CHRAIBI          YASMINE           ACSA                                       Umpire                                Q
+   38   BYE                                             CHTIOUI GHITA                             VENDREDI 09H00
+   27   CHTIOUI          GHITA             USCM
+   59   BYE                                             BAZOUY HALIMA       JEUDI 11H30
+   6    BAZOUY           HALIMA SAADIA
+                                    DHJTC                                                               Umpire
+   46   BYE                                             BENLYAZID MARIA
+   26   BENLYAZID        MARIA             COC
+   51   BYE                                             MHAMDI GHITA        JEUDI 11H30
+   14   MHAMDI           GHITA             RTCMA                                      Umpire                                Q
+   18   BERRADA          SALMA             COC                                                    VENDREDI 10H15
+   30   BENNANE          LINA              USCM         JEUDI 09H00
+   62   BYE                                             LAAROUSSI SORAYA    JEUDU 12H45
+   3    LAAROUSSI        SORAYA            RTCMA
+   42   BYE                                             AMDOUY SARA                                     Umpire
+   23   AMDOUY           SARA              OCC
+   55   BYE                                             ZERROUR SORAYA      JEUDI 11H30
+   10   ZERROUR          SORAYA            WIFAQ                                      Umpire                                Q
+   39   BYE                                             RASSY ZINEB                               VENDREDI 10H15
+   19   RASSY            ZINEB             RTCMO
+   58   BYE                                             SEKKAT MAY          JEUDI 11H30
+   7    SEKKAT           MAY               COC                                                          Umpire
+   47   BYE                                             TAN INES
+   35   TAN              INES              RTCMA
+   50   BYE                                             TAGHLABI RIM        JEUDU 12H45
+   15   TAGHLABI         RIM               COC                                       Umpire                                 Q
+   34   TAHIRI           NADYA             TAS                                                    VENDREDI 10H15
+   31   EL KARNI         YACOUTE           RTCMA        JEUDI 09H00
+   63   BYE                                             BENFILALII AMIRA    JEUDU 12H45
+   2    BENFILALII       AMIRA             WIFAQ
+
+   #    Seeded players    #      Seeded players    #    Lucky Losers        Replacing             Draw date/time:
+   1                      9                        1                                              Last Accepted player
+   2                     10                        2
+   3                     11                        3                                              Player representatives
+   4                     12                        4
+   5                     13                        5
+   6                     14                        6                                              ITF Referee's signature

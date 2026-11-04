@@ -128,3 +128,35 @@ def test_notification_changement_tour(monkeypatch):
     scraper.check_tracked_tournaments(st)
     assert sum("Samy" in m for m in sent) == n1 + 1
     assert any("2e tour" in m and "DIM 16H00" in m for m in sent)
+
+
+def _tscm():
+    import os
+    p = os.path.join(os.path.dirname(__file__), "fixtures", "tscm_dames_qualifs.txt")
+    return open(p, encoding="utf-8").read()
+
+
+def _sara(txt):
+    ms = [m for m in scraper._find_player_matches(txt) if m["joueur"] == "Sara AMDOUY"]
+    assert len(ms) == 1
+    return ms[0]
+
+
+def test_tscm_reel_sara_eliminee_des_qualifs():
+    m = _sara(_tscm())
+    assert m["statut"] == "Éliminé(e) des qualifications"
+    assert m["adversaire"].startswith("ZERROUR SORAYA")
+
+
+def test_tscm_reel_sara_prochain_match_sans_marqueur_q():
+    import re
+    txt = re.sub(r"[ ]+Q[ ]*$", "", _tscm(), flags=re.M)
+    m = _sara(txt)
+    assert m["statut"] == "2e tour" and m["adversaire"].startswith("ZERROUR SORAYA")
+    assert m["horaire"].endswith("11H30")
+
+
+def test_tscm_reel_notification_eliminee():
+    m = _sara(_tscm())
+    msg = scraper._format_player_match({"nom": "T", "ville": "V", "club": "C"}, "u", m)
+    assert "Éliminé(e) des qualifications" in msg and "ZERROUR" in msg

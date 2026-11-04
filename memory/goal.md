@@ -1,11 +1,12 @@
 # Goal actif (04/11/2026, 2e)
-**Statut** : en cours
+**Statut** : atteint (réserve : tours avancés vérifiés sur PDF modifié, pas sur PDF réel avant le 8/11)
 **Objectif** : en CI seule (sans Mac), notif Telegram à chaque mise à jour du PDF de convocation d'un tournoi suivi avec le PROCHAIN match de Sara/Samy AMDOUY (jour, heure, adversaire) + changements.
 **Critère de fin** : (1) tests verts sur de vrais PDF (LANORIA, TCR + PDF de tournois terminés du site comme corpus de tours avancés) où le parseur donne le bon prochain match (jour/heure/adversaire) pour un joueur testé à chaque tour ; (2) run CI vert avec notifs LANORIA cohérentes.
 **Périmètre** : autorisé = `scraper.py`, `tests/`, fixtures texte de PDF dans `tests/` ; interdit = édition manuelle de `state.json`, workflows (sauf besoin avéré), autres fichiers. Commit/push : demander.
 **Budget** : 5 itérations, checkpoint à la 3.
 **Vérificateur** : `pytest` + comparaison manuelle de la sortie du parseur à la lecture du PDF.
 **Journal** :
+- It.2 : commit 30542ef poussé, run CI 41835782035 vert, 0 erreur ; LANORIA players_notified 2→4 (clé de dédup changée = 1 re-notif Samy+Sara, one-shot). À vérifier avec un vrai PDF mis à jour après le 8/11.
 - It.1 : corpus site = seulement tournois en cours/à venir (pas de tournoi terminé) → pas de PDF « tours avancés » réel avant le 8/11. Parseur de tableau écrit (colonnes d'en-tête « 2nd Round… », temps par colonne, adversaire = moitié opposée du bloc, éliminé/qualifié) validé sur le vrai PDF LANORIA (1er et 2e tour: DIM 12H15 vs KHARCHAFI ; 2e: DIM 16H00) + variantes synthétiques + mise en page TCR. 48 tests verts. Reste : commit/push (accord requis) + run CI + vérif avec vrai PDF après le 8/11.
 
 ---

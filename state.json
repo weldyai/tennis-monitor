@@ -135,7 +135,7 @@
     "TOURNOI DOUBLE TCF GRADE 3|28-03-2026|TCF",
     "TOURNOI DOUBLE TTC GRADE 2|25-04-2026|TTC"
   ],
-  "updated_at": "2026-11-04T09:01:49.076648+00:00",
+  "updated_at": "2026-11-04T09:15:14.029005+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -919,9 +919,19 @@
       "inscription_avant": "13-11-2026",
       "last_inscriptions": "  • 10 ans : Garçons : 10 inscrits (champ limité à 40 joueurs)\n  • 10 ans : Filles : 1 inscrite (champ limité à 24 joueuses)\n  • 11 ANS : 11 ans Garçons : 10 inscrits (champ limité à 40 joueurs)\n  • 11 ANS : 11 ans Filles : 3 inscrites (champ limité à 24 joueuses)\n  • 12 ANS : 12 ans Garçons : 4 inscrits (champ limité à 40 joueurs)\n  • 12 ANS : 12 ans Filles : 6 inscrites (champ limité à 24 joueuses)",
       "convocation_notified": false
+    },
+    "TOURNOI LANORIA GRADE 4|31-10-2026|LANORIA": {
+      "nom": "TOURNOI LANORIA GRADE 4",
+      "ville": "MOHAMMEDIA",
+      "club": "LANORIA",
+      "debut": "31-10-2026",
+      "fin": "15-11-2026",
+      "inscription_avant": "26-10-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
-  "telegram_offset": 478509667,
+  "telegram_offset": 478509671,
   "count_history": [
     12,
     12,

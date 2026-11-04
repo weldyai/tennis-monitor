@@ -135,7 +135,7 @@
     "TOURNOI DOUBLE ASTT GRADE 4|13-06-2026|AST TAZA",
     "TOURNOI DOUBLE ASTT GRADE 4|06-06-2026|AST TAZA"
   ],
-  "updated_at": "2026-11-04T17:03:02.455599+00:00",
+  "updated_at": "2026-11-04T17:30:18.977099+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -929,7 +929,7 @@
       ]
     }
   },
-  "telegram_offset": 478509677,
+  "telegram_offset": 478509678,
   "count_history": [
     12,
     12,

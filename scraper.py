@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import requests
 from datetime import datetime, date, timezone
@@ -244,6 +245,123 @@ def _check_convocation(ajax_bodies: list[str]) -> bool:
     return False
 
 
+# ─── Suivi des joueurs dans les PDF de convocation ───────────────────────────
+
+SUIVI_JOUEURS = (("SARA", "Sara AMDOUY"), ("SAMY", "Samy AMDOUY"))
+_DAY_TIME = re.compile(r"\b(LUN|MAR|MER|JEU|VEN|SAM|DIM)[A-Z]*\.?\s+(\d{1,2})\s?H\s?(\d{0,2})", re.I)
+_DRAW_ROW = re.compile(r"^\s*(\d{1,3})\s+\S")
+_PDF_URL = re.compile(r"https?://[^\s\"'<>]+?\.pdf", re.I)
+
+
+def _extract_pdf_urls(ajax_bodies: list[str]) -> list[str]:
+    from html import unescape
+    urls: list[str] = []
+    for body in ajax_bodies:
+        for u in _PDF_URL.findall(unescape(body)):
+            u = u.split("url=")[-1]
+            if u not in urls:
+                urls.append(u)
+    return urls
+
+
+def _pdf_to_text(url: str) -> str:
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        out = subprocess.run(["pdftotext", "-layout", "-", "-"], input=resp.content,
+                             capture_output=True, timeout=60)
+        return out.stdout.decode("utf-8", errors="replace")
+    except Exception as e:
+        print(f"  _pdf_to_text({url}): {e}")
+        return ""
+
+
+def _fmt_time(m: re.Match) -> str:
+    return f"{m.group(1).upper()} {int(m.group(2))}H{m.group(3) or '00'}"
+
+
+def _clean_opponent(line: str) -> str:
+    line = _DAY_TIME.sub(" ", line)
+    line = re.sub(r"^\s*\d{1,3}\s+(?:\d+|NC)?\s*", "", line)
+    line = re.sub(r"Umpire|\bA \d.*$", " ", line)
+    line = re.sub(r"(?<=\D)0\s*$|\s0\s*$", " ", line)
+    line = re.sub(r"\s{2,}", " ", line).strip()
+    return line or "?"
+
+
+def _later_round_entry(lines: list[str], i: int) -> dict:
+    """Nom de famille seul dans une colonne de tour suivant : joueur déduit du titre du tableau."""
+    label = "AMDOUY (Sara ou Samy)"
+    for j in range(i, -1, -1):
+        head = lines[j]
+        if re.search(r"DOUBLE", head, re.I):
+            break
+        if re.search(r"DAMES|F[ÉE]MININ", head, re.I):
+            label = "Sara AMDOUY"
+            break
+        if re.search(r"HOMMES|MESSIEURS|MASCULIN", head, re.I):
+            label = "Samy AMDOUY"
+            break
+    m = _DAY_TIME.search(lines[i])
+    return {"joueur": label, "ligne": re.sub(r"\s{2,}", " ", lines[i]).strip(), "adversaire": "",
+            "horaire": _fmt_time(m) if m else "",
+            "contexte": "Qualifié(e) au tour suivant (nom relevé dans une colonne de tour)"}
+
+
+def _find_player_matches(text: str) -> list[dict]:
+    """Cherche SUIVI_JOUEURS dans le texte d'un PDF (pdftotext -layout).
+    Ligne de tableau (numérotée) : adversaire = ligne appariée (impair/pair), horaire = premier
+    jour+heure sur l'une des deux lignes. Autre ligne (liste) : contexte = dernière phrase au-dessus."""
+    lines = text.splitlines()
+    found = []
+    for i, line in enumerate(lines):
+        if not re.search(r"\bAMDOUY\b", line, re.I):
+            continue
+        prenoms = [(p, l) for p, l in SUIVI_JOUEURS if re.search(rf"\b{p}\b", line, re.I)]
+        if not prenoms:
+            found.append(_later_round_entry(lines, i))
+            continue
+        for prenom, label in prenoms:
+            row = _DRAW_ROW.match(line)
+            entry = {"joueur": label, "ligne": re.sub(r"\s{2,}", " ", line).strip(),
+                     "adversaire": "", "horaire": "", "contexte": ""}
+            if row:
+                idx = int(row.group(1))
+                partner = idx + 1 if idx % 2 else idx - 1
+                cand = [j for j in range(max(0, i - 4), min(len(lines), i + 5))
+                        if j != i and (m := _DRAW_ROW.match(lines[j])) and int(m.group(1)) == partner]
+                pl = lines[min(cand, key=lambda j: abs(j - i))] if cand else ""
+                if pl:
+                    entry["adversaire"] = _clean_opponent(pl)
+                times = sorted((m.start(), _fmt_time(m)) for m in _DAY_TIME.finditer(line))
+                times += sorted((m.start(), _fmt_time(m)) for m in _DAY_TIME.finditer(pl))
+                if times:
+                    entry["horaire"] = times[0][1]
+            else:
+                for j in range(i - 1, max(-1, i - 15), -1):
+                    if re.search(r"[a-zé]{4,}.*[a-zé]{4,}", lines[j]):
+                        entry["contexte"] = re.sub(r"\s{2,}", " ", lines[j]).strip()
+                        break
+            found.append(entry)
+    return found
+
+
+def _match_key(url: str, m: dict) -> str:
+    ligne = "" if m["adversaire"] else m["ligne"]
+    raw = "|".join((url, m["joueur"], ligne, m["adversaire"], m["horaire"]))
+    return hashlib.md5(raw.encode()).hexdigest()[:10]
+
+
+def _format_player_match(info: dict, url: str, m: dict) -> str:
+    head = f"🎾 <b>{m['joueur']}</b>\n<b>{info['nom']}</b>\n📍 {info.get('ville')} — {info.get('club')}\n\n"
+    if m["adversaire"] or m["horaire"]:
+        body = (f"📅 {m['horaire'] or 'horaire non lisible'}\n"
+                f"🆚 {m['adversaire'] or 'adversaire non lisible'}\n")
+    else:
+        body = f"ℹ️ {m['contexte'] or 'Cité dans la convocation'}\n"
+    return head + body + f"\n<code>{m['ligne']}</code>\n👉 <a href=\"{url}\">Voir le PDF</a>"
+
+
 # ─── Scraping ────────────────────────────────────────────────────────────────
 
 def _scroll_all_until_stable(page, ajax_all: list[str], max_rounds: int = 20, stable_needed: int = 3) -> int:
@@ -395,6 +513,7 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
                 results["inscriptions"] = _parse_inscriptions(bodies)
             elif tab_label == "Convocations":
                 results["convocation"] = _check_convocation(bodies)
+                results["convocation_pdfs"] = _extract_pdf_urls(bodies)
     except Exception as e:
         print(f"  fetch_detail({nom}): {e}")
     finally:
@@ -487,9 +606,7 @@ def check_tracked_tournaments(state: dict) -> bool:
 
         nom = info["nom"]
         print(f"Checking tracked: {nom}")
-        tabs = ["Inscriptions"]
-        if not info.get("convocation_notified"):
-            tabs.append("Convocations")
+        tabs = ["Inscriptions", "Convocations"]
 
         detail = fetch_detail(nom, tabs)
 
@@ -533,6 +650,15 @@ def check_tracked_tournaments(state: dict) -> bool:
             send_telegram(msg)
             info["convocation_notified"] = True
             modified = True
+
+        done = info.setdefault("players_notified", [])
+        for pdf_url in detail.get("convocation_pdfs", []):
+            for m in _find_player_matches(_pdf_to_text(pdf_url)):
+                k = _match_key(pdf_url, m)
+                if k not in done:
+                    send_telegram(_format_player_match(info, pdf_url, m))
+                    done.append(k)
+                    modified = True
 
     for key in keys_to_remove:
         print(f"Tournoi terminé, stop tracking: {key}")

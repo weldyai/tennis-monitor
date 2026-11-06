@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install requests playwright beautifulsoup4
-          playwright install chromium --with-deps
-          sudo apt-get install -y poppler-utils
+          playwright install chromium
+          sudo apt-get install -y --no-install-recommends poppler-utils
 
       - name: Run scraper
         env:

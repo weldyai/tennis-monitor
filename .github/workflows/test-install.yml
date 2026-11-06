@@ -1,6 +1,8 @@
 name: Test install
 on:
-  workflow_dispatch:
+  push:
+    branches: [fix/ci-install-rapide]
+    paths: [.github/workflows/test-install.yml]
 jobs:
   t:
     runs-on: ubuntu-latest

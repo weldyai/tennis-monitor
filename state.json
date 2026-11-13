@@ -139,7 +139,7 @@
     "TOURNOI RIAD GRADE 3-4|09-05-2026|RIAD",
     "TOURNOI DHJTC GRADE 3-4|17-07-2026|DHJTC"
   ],
-  "updated_at": "2026-11-13T14:31:03.229227+00:00",
+  "updated_at": "2026-11-13T14:54:16.321057+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -995,5 +995,5 @@
     "cron_lag": "2026-11-11T17:00:58.131756+00:00",
     "crash": "2026-11-13T14:31:02.580689+00:00"
   },
-  "last_scrape_at": "2026-11-13T14:30:30.187589+00:00"
+  "last_scrape_at": "2026-11-13T14:53:45.479416+00:00"
 }

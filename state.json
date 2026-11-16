@@ -140,7 +140,7 @@
     "TOURNOI DOUBLE RIAD GRADE 3 & 4|09-05-2026|RIAD",
     "TOURNOI DHJTC 10-12 ANS|20-07-2026|DHJTC"
   ],
-  "updated_at": "2026-11-16T10:31:42.549145+00:00",
+  "updated_at": "2026-11-16T10:35:12.385922+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -955,9 +955,19 @@
       "last_inscriptions": "  • GRADE 4 : Simple Messieurs de 601 à NC : 75 inscrits (champ limité à 100 joueurs)\n  • GRADE 4 : Simple  Dames de 151 à NC : 19 inscrites (champ limité à 40 joueuses)",
       "convocation_notified": false,
       "players_notified": []
+    },
+    "TOURNOI FRMT 13 et 14 ans|12-12-2026|RTCMO": {
+      "nom": "TOURNOI FRMT 13 et 14 ans",
+      "ville": "MOHAMMEDIA",
+      "club": "RTCMO",
+      "debut": "12-12-2026",
+      "fin": "13-12-2026",
+      "inscription_avant": "07-12-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
-  "telegram_offset": 478509678,
+  "telegram_offset": 478509680,
   "count_history": [
     14,
     14,

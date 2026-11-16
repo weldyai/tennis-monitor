@@ -142,7 +142,7 @@
     "TOURNOI DOUBLE USCM GRADE 2 & 3|23-08-2026|USCM",
     "TOURNOI USM DOUBLE NOCTURNE|06-07-2026|USM/TCC"
   ],
-  "updated_at": "2026-11-16T21:02:57.792929+00:00",
+  "updated_at": "2026-11-16T21:05:15.792120+00:00",
   "id_map": {
     "e3e859ea": "TOURNOI DOUBLE STCO GRADE 3|26-06-2026|STCO",
     "39eb62cf": "TOURNOI STCO GRADE 3|26-06-2026|STCO",
@@ -988,9 +988,19 @@
       "last_inscriptions": "  • 13 Ans Garçons : 24 inscrits (champ limité à 24 joueurs)\n  • 13 Ans Filles : 2 inscrites (champ limité à 16 joueuses)\n  • 14 Ans Garçons : 9 inscrits (champ limité à 24 joueurs)\n  • 14 Ans Filles : 16 inscrites (champ limité à 16 joueuses)",
       "convocation_notified": false,
       "players_notified": []
+    },
+    "TOURNOI DOUBLE FRMT 11-14 ANS|19-12-2026|TCF": {
+      "nom": "TOURNOI DOUBLE FRMT 11-14 ANS",
+      "ville": "FES",
+      "club": "TCF",
+      "debut": "19-12-2026",
+      "fin": "27-12-2026",
+      "inscription_avant": "14-12-2026",
+      "last_inscriptions": "",
+      "convocation_notified": false
     }
   },
-  "telegram_offset": 478509680,
+  "telegram_offset": 478509681,
   "count_history": [
     15,
     15,

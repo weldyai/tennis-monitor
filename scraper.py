@@ -534,6 +534,14 @@ def _format_player_match(info: dict, url: str, m: dict) -> str:
 
 # ─── Scraping ────────────────────────────────────────────────────────────────
 
+def _scroll_to_top(page) -> None:
+    """La liste WebDev s'ouvre au milieu : les premiers tournois ne sont dans le DOM qu'après un scroll vers le haut."""
+    for _ in range(30):
+        page.mouse.wheel(0, -500)
+        page.wait_for_timeout(100)
+    page.wait_for_timeout(3000)
+
+
 def _scroll_all_until_stable(page, ajax_all: list[str], max_rounds: int = 20, stable_needed: int = 3) -> int:
     """Scroll window + inner containers until tournament count stabilizes. Returns final count."""
     _JS_SCROLL = """
@@ -648,6 +656,7 @@ def fetch_detail(nom: str, tabs: list[str]) -> dict[str, str | bool]:
         # Scroll incrémental : le virtual scroll WebDev ne rend dans le DOM
         # que les éléments visibles — on scroll par petits pas et on vérifie
         # après chaque pas si l'élément apparaît dans le DOM.
+        _scroll_to_top(page)
         target = page.get_by_text(nom, exact=False)
         found = False
         for _ in range(400):
